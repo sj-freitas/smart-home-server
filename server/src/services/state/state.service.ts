@@ -58,32 +58,7 @@ function alterHomeState(
       icon: matchingRoomInState.icon,
       temperature: matchingRoomInState.temperature ?? null,
       humidity: matchingRoomInState.humidity ?? null,
-      // Filter by devices that only exist in the config
-      // This is where the bug lies
-      devices: configRoom.devices
-        .map((currDeviceInConfig) => {
-          const existingDeviceInState = matchingRoomInState.devices.find(
-            (t) => currDeviceInConfig.id === t.id,
-          );
-
-          if (!existingDeviceInState) {
-            console.warn(
-              `Device in config doesn't exist in state, this is most likely a new device. It'll be added via changes at some point.`,
-            );
-            return null;
-          }
-
-          return {
-            id: existingDeviceInState.id,
-            name: existingDeviceInState.name,
-            icon: existingDeviceInState.icon,
-            type: existingDeviceInState.type,
-            actions: existingDeviceInState.actions,
-            state: existingDeviceInState.state,
-            online: existingDeviceInState.online,
-          } as DeviceState;
-        })
-        .filter((t): t is DeviceState => t !== null) as DeviceState[],
+      devices: matchingRoomInState.devices,
     };
   });
 
@@ -126,7 +101,7 @@ function alterHomeState(
     }
 
     // Instead of push we can replace perhaps?
-    const existingDevice: DeviceState = currRoom.devices.find((t) => t.id === currDevice.id);
+    const existingDevice = currRoom.devices.find((t) => t.id === currDevice.id);
     if (existingDevice) {
       // Squash existing device
       existingDevice.name = currDevice.name ?? existingDevice.name;
