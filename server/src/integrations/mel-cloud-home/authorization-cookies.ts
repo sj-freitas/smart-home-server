@@ -25,7 +25,7 @@ async function buildBrowser(): Promise<Browser> {
 async function ensurePageHealthy(page: Page, maxAttempts = 6): Promise<void> {
   for (let i = 1; i <= maxAttempts; i++) {
     const blazorError = await page.$("#blazor-error-ui");
-    if (!(await blazorError.isVisible())) {
+    if (!blazorError || !(await blazorError.isVisible())) {
       return;
     }
 
