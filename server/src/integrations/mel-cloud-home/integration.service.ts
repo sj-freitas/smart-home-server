@@ -6,6 +6,7 @@ import {
   IntegrationService,
   TryRunActionResult,
 } from "../integrations-service";
+import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistence.service";
 import { MelCloudHomeClient } from "./client";
 import {
   AirToAirUnitStateChange,
@@ -29,7 +30,7 @@ const WEIGHTED_FIELDS_BY_RELEVANCE = FIELDS_ORDERED_BY_RELEVANCE.reverse()
   )
   .reverse();
 
-const fanSpeedSettingsToParametersMap = {
+const fanSpeedSettingsToParametersMap: Record<string, string> = {
   "0": "Auto",
   "1": "One",
   "2": "Two",
@@ -80,13 +81,27 @@ function tryFindBestMatchingAction(
 }
 
 export class MelCloudHomeIntegrationService implements IntegrationService<MelCloudHomeIntegrationDevice> {
-  constructor(private readonly melCloudHomeClient: MelCloudHomeClient) {}
+  constructor(
+    private readonly melCloudHomeClient: MelCloudHomeClient,
+    private readonly authenticationCookies: MelCloudAuthCookiesPersistenceService,
+  ) {}
 
   public name: "mel_cloud_home" = "mel_cloud_home";
 
   public async consolidateDeviceStates(
     devices: IntegratedDeviceConfig<MelCloudHomeIntegrationDevice>[],
   ): Promise<DeviceState[]> {
+    const authCookies = await this.authenticationCookies.retrieveAuthCookies();
+    if (authCookies === null) {
+      // This happens when MELCloud is offline most likely, the application needs to be resilient.
+      return devices.map((currDevice) => ({
+        online: false,
+        state: "off",
+        temperature: null,
+        humidity: null,
+      }));
+    }
+
     const context = await this.melCloudHomeClient.getContext();
 
     return devices.map((currDevice) => {

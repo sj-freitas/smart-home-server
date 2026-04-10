@@ -13,25 +13,33 @@ import { ServicesModule } from "../../services/module";
 import { SocketsModule } from "../../sockets/module";
 import { startScheduler } from "../../helpers/scheduler";
 
+export const MEL_CLOUD_AUTHENTICATION_COOKIES =
+  "MelCloudHomeAuthenticationCookies";
 const MelCloudAuthCookiesPersistenceServiceProvider = {
-  provide: MelCloudAuthCookiesPersistenceService,
+  provide: MEL_CLOUD_AUTHENTICATION_COOKIES,
+  inject: [ConfigService],
   scope: Scope.DEFAULT,
-  useFactory: () => new MelCloudAuthCookiesPersistenceService(),
+  useFactory: async (config: ConfigService) => {
+    const authCookiesService = new MelCloudAuthCookiesPersistenceService();
+    await spinCookieRefresher(config, authCookiesService);
+
+    return authCookiesService;
+  },
 };
 
 // Run this once.
-export const MEL_CLOUD_AUTHENTICATION_COOKIES =
-  "MelCloudHomeAuthenticationCookies";
-const MelCloudHomeAuthenticationCookiesProvider = {
-  provide: MEL_CLOUD_AUTHENTICATION_COOKIES,
-  inject: [ConfigService, MelCloudAuthCookiesPersistenceService],
-  useFactory: async (
-    config: ConfigService,
-    authCookiesService: MelCloudAuthCookiesPersistenceService,
-  ) => {
-    return await spinCookieRefresher(config, authCookiesService);
-  },
-};
+// export const MEL_CLOUD_AUTHENTICATION_COOKIES =
+//   "MelCloudHomeAuthenticationCookies";
+// const MelCloudHomeAuthenticationCookiesProvider = {
+//   provide: MEL_CLOUD_AUTHENTICATION_COOKIES,
+//   inject: [ConfigService, MelCloudAuthCookiesPersistenceService],
+//   useFactory: async (
+//     config: ConfigService,
+//     authCookiesService: MelCloudAuthCookiesPersistenceService,
+//   ) => {
+//     return await spinCookieRefresher(config, authCookiesService);
+//   },
+// };
 
 export const MEL_CLOUD_HOME_STATE_POLLING = "MelCloudHomeStatePolling";
 const MelCloudHomePollingProvider = {
@@ -41,7 +49,6 @@ const MelCloudHomePollingProvider = {
     MelCloudHomeIntegrationService,
     StateService,
     HomeStateGateway,
-    MEL_CLOUD_AUTHENTICATION_COOKIES,
   ],
   useFactory: async (
     config: ConfigService,
@@ -64,7 +71,7 @@ const MelCloudHomePollingProvider = {
 
 const MelCloudHomeClientProvider = {
   provide: MelCloudHomeClient,
-  inject: [MelCloudAuthCookiesPersistenceService, ConfigService],
+  inject: [MEL_CLOUD_AUTHENTICATION_COOKIES, ConfigService],
   useFactory: async (
     melCloudAuthCookiesPersistenceService: MelCloudAuthCookiesPersistenceService,
     config: ConfigService,
@@ -85,9 +92,9 @@ const MelCloudHomeClientProvider = {
 
 const MelCloudHomeIntegrationServiceProvider = {
   provide: MelCloudHomeIntegrationService,
-  inject: [MelCloudHomeClient],
-  useFactory: async (client: MelCloudHomeClient) => {
-    return new MelCloudHomeIntegrationService(client);
+  inject: [MelCloudHomeClient, MEL_CLOUD_AUTHENTICATION_COOKIES],
+  useFactory: async (client: MelCloudHomeClient, cookiesProvider: MelCloudAuthCookiesPersistenceService) => {
+    return new MelCloudHomeIntegrationService(client, cookiesProvider);
   },
 };
 
@@ -96,14 +103,13 @@ const MelCloudHomeIntegrationServiceProvider = {
   controllers: [MelCLoudHomeController],
   providers: [
     MelCloudAuthCookiesPersistenceServiceProvider,
-    MelCloudHomeAuthenticationCookiesProvider,
     MelCloudHomeIntegrationServiceProvider,
     MelCloudHomeClientProvider,
     MelCloudHomePollingProvider,
   ],
   exports: [
     MelCloudHomeIntegrationServiceProvider,
-    MelCloudHomeAuthenticationCookiesProvider,
+    MelCloudAuthCookiesPersistenceServiceProvider,
     MelCloudHomeClientProvider,
     MelCloudHomePollingProvider,
   ],

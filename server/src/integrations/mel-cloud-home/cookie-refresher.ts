@@ -15,13 +15,19 @@ const createRefreshAuthCookiesFunction =
   ) =>
   async () => {
     const cookie = await getAuthorizationCookiesWithRetry(melCloudHomeConfig);
+    if (!cookie) {
+      console.error(
+        "Failed to refresh MelCloudHome authorization cookies. Will retry in the next scheduled run.",
+      );
+      return;
+    }
     await authCookiesService.storeAuthCookies(cookie);
   };
 
 export async function spinCookieRefresher(
   config: ConfigService,
   authCookiesService: MelCloudAuthCookiesPersistenceService,
-): Promise<string> {
+): Promise<string | null> {
   const melCloudHomeConfig = config
     .getConfig()
     .integrations.find((t) => t.name === "mel_cloud_home");

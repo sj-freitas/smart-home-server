@@ -25,7 +25,10 @@ async function buildBrowser(): Promise<Browser> {
 async function ensurePageHealthy(page: Page, maxAttempts = 6): Promise<void> {
   for (let i = 1; i <= maxAttempts; i++) {
     const blazorError = await page.$("#blazor-error-ui");
-    if (!blazorError || !(await blazorError.isVisible())) {
+    if (!blazorError) {
+      return;
+    }
+    if (!(await blazorError.isVisible())) {
       return;
     }
 
@@ -55,6 +58,9 @@ async function clickSignInAndLogin(
 
   const signInButtonSelector = "xpath=//button[normalize-space() = 'Sign In']";
   const signInButton = await page.waitForSelector(signInButtonSelector);
+  if (!signInButton) {
+    throw new Error('Sign in button not found');
+  }
 
   await signInButton.click();
 
@@ -80,7 +86,7 @@ async function getMelCloudHomeSecureCookies(
 
 export async function getAuthorizationCookies(
   melCloudHomeConfig: MelCloudHomeIntegration,
-): Promise<string> {
+): Promise<string | null> {
   let browser: Browser | null = null;
   let context: BrowserContext | null = null;
 
@@ -113,7 +119,7 @@ export async function getAuthorizationCookies(
     return melCloudHomeCookies.join("; ");
   } catch (err) {
     console.error("Failed to obtain authorization cookies:", err);
-    throw err;
+    return null;
   } finally {
     // Put into an array of promises to make sure both close are executed regardless of one another
     await Promise.all(

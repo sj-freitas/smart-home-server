@@ -6,8 +6,8 @@ export type TryRunActionResult = true | string;
 export interface DeviceState {
   online: boolean;
   state: "off" | string;
-  temperature: number;
-  humidity: number;
+  temperature: number | null;
+  humidity: number | null;
 }
 
 export interface IntegratedDeviceConfig<T> {
