@@ -21,11 +21,11 @@ import { ConfigService } from "../config/config-service";
 export class HomeStateGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit<Server>
 {
-  private server: Server;
+  private server!: Server;
   // Effectively state is an in-memory cache as the updates always trigger a change in it.
   // The state gets updated every POLLING_INTERVAL (120s) to sync it. This would not work
   // so well if we had multiple backend instances but that isn't the case.
-  private state: BehaviorSubject<HomeState>;
+  private state!: BehaviorSubject<HomeState | null>;
   private activeConnections = 0;
   private pollHandle: NodeJS.Timeout | null = null;
 
@@ -56,8 +56,8 @@ export class HomeStateGateway
     return { ts: new Date().toISOString(), type, payload };
   }
 
-  private broadcastSnapshot(state: HomeState | { empty: true }) {
-    if ((state as any).empty) {
+  private broadcastSnapshot(state: HomeState | null) {
+    if (!state) {
       console.log(`Initial state - can't broadcast.`);
       return;
     }

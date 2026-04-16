@@ -115,7 +115,7 @@ export class HueCloudIntegrationService implements IntegrationService<HueCloudIn
 
         return {
           state: action,
-          online: matchingDevice.state.reachable,
+          online: matchingDevice.state.reachable ?? false,
           temperature: null,
           humidity: null,
         };
@@ -123,7 +123,7 @@ export class HueCloudIntegrationService implements IntegrationService<HueCloudIn
       if (currDevice.type === "smart_switch") {
         return {
           state: matchingDevice.state.on ? "on" : "off",
-          online: matchingDevice.state.reachable,
+          online: matchingDevice.state.reachable ?? false,
           temperature: null,
           humidity: null,
         };

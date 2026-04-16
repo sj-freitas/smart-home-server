@@ -1,6 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import * as cookieParser from "cookie-parser";
+import cookieParser = require("cookie-parser");
 
 const DEFAULT_PORT = "3001";
 
@@ -9,15 +9,14 @@ async function bootstrap() {
   const authClientBase = process.env.AUTH_CLIENT_BASE;
   const allowedOrigins = [
     authClientBase,
-    authClientBase.indexOf("www.") >= 0
+    authClientBase?.includes("www.")
       ? authClientBase.replace("www.", "")
-      : "",
-    ,
+      : undefined,
     process.env.APP_DOMAIN_URL,
   ].filter(Boolean);
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) {
         return callback(null, true);
       }

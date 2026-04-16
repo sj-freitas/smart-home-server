@@ -62,9 +62,9 @@ const integrationsMap = new Map<IntegrationTypeNames, ModuleHelper>([
 
 function initDynamicIntegrationsProvider() {
   const config = ConfigService.create().getConfig();
-  const integrationProviders: ModuleHelper[] = config.integrations.map((t) =>
-    integrationsMap.get(t.name),
-  );
+  const integrationProviders: ModuleHelper[] = config.integrations
+    .map((t) => integrationsMap.get(t.name))
+    .filter((t): t is ModuleHelper => t !== undefined);
 
   return {
     imports: integrationProviders.map((t) => t.module),

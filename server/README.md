@@ -99,6 +99,27 @@ MY_HOME_ADDRESS_1= # Address line one to be shown on the app. Please be sure to 
 MY_HOME_ADDRESS_2= # Address line two to be shown on the app. Please be sure to not version these to not dox yourself!
 ```
 
+# Testing
+
+Unit tests are written with [Jest](https://jestjs.io/) and [ts-jest](https://kulshekhar.github.io/ts-jest/). Spec files live next to the source file they cover (e.g. `foo.service.spec.ts` alongside `foo.service.ts`). Only business logic is tested — database access and HTTP requests are mocked.
+
+```bash
+# Run all tests once
+npm test
+
+# Run in watch mode (re-runs on file changes)
+npm run test:watch
+
+# Run with coverage report
+npm run test:coverage
+```
+
+To run a single spec file:
+
+```bash
+npx jest src/services/auth/google-session.service.spec.ts
+```
+
 # Building
 
 For production build just run `npm run build` and the

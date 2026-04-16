@@ -22,11 +22,11 @@ function alterHomeState(
       ? homeState
       : {
           name: homeConfig.name,
-          pageTitle: homeConfig.pageTitle,
-          logo: homeConfig.iconUrl,
-          faviconUrl: homeConfig.faviconUrl,
-          subTitle: homeConfig.subTitle,
-          rooms: [],
+          pageTitle: homeConfig.pageTitle ?? "",
+          logo: homeConfig.iconUrl ?? "",
+          faviconUrl: homeConfig.faviconUrl ?? "",
+          subTitle: homeConfig.subTitle ?? "",
+          rooms: [] as HomeState["rooms"],
         };
 
   // const home = this.configService.getConfig().home;
@@ -42,10 +42,10 @@ function alterHomeState(
         },
         id: configRoom.id,
         name: configRoom.name,
-        icon: configRoom.icon,
+        icon: configRoom.icon ?? "",
         temperature: null,
         humidity: null,
-        devices: [],
+        devices: [] as HomeState["rooms"][number]["devices"],
       };
     }
 
@@ -67,9 +67,9 @@ function alterHomeState(
   );
   // Update rooms infos (Temperatures and Humidity)
   for (const currRoom of rooms) {
-    const humidityDevice = mappedDevices.get(
-      currRoom.roomInfo.humidityDeviceId,
-    );
+    const humidityDevice = currRoom.roomInfo?.humidityDeviceId
+      ? mappedDevices.get(currRoom.roomInfo.humidityDeviceId)
+      : undefined;
     if (
       humidityDevice &&
       humidityDevice.humidity !== null &&
@@ -77,9 +77,9 @@ function alterHomeState(
     ) {
       currRoom.humidity = humidityDevice.humidity ?? null;
     }
-    const temperatureDevice = mappedDevices.get(
-      currRoom.roomInfo.temperatureDeviceId,
-    );
+    const temperatureDevice = currRoom.roomInfo?.temperatureDeviceId
+      ? mappedDevices.get(currRoom.roomInfo.temperatureDeviceId)
+      : undefined;
     if (
       temperatureDevice &&
       temperatureDevice.temperature !== null &&
@@ -114,12 +114,12 @@ function alterHomeState(
       // It's a new device. Not sure how this flow should work ? Maybe do not support it.
       currRoom.devices.push({
         id: currDevice.id,
-        name: currDevice.name,
-        icon: currDevice.icon,
-        type: currDevice.type,
-        actions: currDevice.actions,
-        state: currDevice.state,
-        online: currDevice.online,
+        name: currDevice.name ?? currDevice.id,
+        icon: currDevice.icon ?? "",
+        type: currDevice.type ?? "smart_switch",
+        actions: currDevice.actions ?? [],
+        state: currDevice.state ?? "off",
+        online: currDevice.online ?? false,
       });
     }
   }

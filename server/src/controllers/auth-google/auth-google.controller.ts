@@ -37,6 +37,12 @@ export class AuthGoogleController {
     if (!payload) {
       throw new BadRequestException("Invalid id_token");
     }
+    if (!payload.email) {
+      throw new BadRequestException("Missing email in token payload");
+    }
+    if (!token.accessToken) {
+      throw new BadRequestException("Missing access_token in token response");
+    }
 
     const session = await this.sessionService.createSession(
       payload.email,

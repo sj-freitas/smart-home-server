@@ -53,6 +53,10 @@ export class ShellyController {
     }
 
     const device = this.deviceHelper.getDevice(matchedDevicePath);
+    if (!device) {
+      console.warn(`Shelly Device at path ${matchedDevicePath} could not be loaded.`);
+      return { eventConsumed: false };
+    }
     const [roomId, homeDeviceId] = matchedDevicePath.split("/");
 
     const parsedTemperatureInCelsius = Number.parseFloat(temperature);
