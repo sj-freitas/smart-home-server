@@ -8,6 +8,21 @@ export const RoomDeviceTypesZod = z.union([
   z.literal("temperature_humidity_sensor"),
 ]);
 
+export const OnActionTypeNamesZod = z.union([z.literal("timer")]);
+export type OnActionTypeNames = z.infer<typeof OnActionTypeNamesZod>;
+
+export const TimerOnActionZod = z.object({
+  type: z.literal("timer"),
+  parameters: z
+    .object({
+      durationInMinutes: z.number().positive().readonly(),
+      action: z.string().readonly(),
+    })
+    .readonly(),
+});
+
+export const OnActionZod = z.discriminatedUnion("type", [TimerOnActionZod]);
+
 export const DeviceActionZod = z.object({
   id: z.string().readonly(),
   name: z.string().readonly(),
@@ -19,6 +34,7 @@ export const DeviceActionZod = z.object({
       "Parameters for the action, if any - these are only validated at run time for specific devices.",
     )
     .optional(),
+  onAction: z.array(OnActionZod).optional().readonly(),
 });
 
 export const RoomDeviceConfigZod = z.object({
@@ -54,6 +70,8 @@ export const HomeConfigZod = z.object({
   faviconUrl: z.string().readonly().optional(),
 });
 
+export type TimerOnAction = z.infer<typeof TimerOnActionZod>;
+export type OnAction = z.infer<typeof OnActionZod>;
 export type DeviceAction = z.infer<typeof DeviceActionZod>;
 export type RoomDeviceTypes = z.infer<typeof RoomDeviceTypesZod>;
 export type RoomDeviceConfig = z.infer<typeof RoomDeviceConfigZod>;
