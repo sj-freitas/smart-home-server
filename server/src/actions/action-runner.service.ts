@@ -50,7 +50,9 @@ export class ActionRunnerService {
     const newState = await this.stateService.addToState([
       { id: deviceId, roomId, state: actionId },
     ]);
-    this.homeStateGateway.updateState(newState);
+    if (this.homeStateGateway.isInitialized) {
+      this.homeStateGateway.updateState(newState);
+    }
 
     await Promise.all((action.onAction ?? []).map((onAction) => this.onActions.handleOnAction(onAction)));
 
