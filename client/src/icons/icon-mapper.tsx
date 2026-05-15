@@ -10,11 +10,12 @@ import { SofaIcon } from "./sofa.icon";
 import { DoubleBedIcon } from "./double-bed.icon";
 import { SingleBedIcon } from "./single-bed.icon";
 import { BathtubIcon } from "./bathtub.icon";
-import { RecessedLightIcon } from "./recessed_light";
+import { RecessedLightIcon } from "./recessed-light";
 import { DiningTableIcon } from "./dining-table.icon";
 import { HeaterIcon } from "./heater.icon";
 import { ThermometerIcon } from "./thermometer.icon";
 import { WaterDropIcon } from "./water-drop.icon";
+import { TowelHeaterIcon } from "./towel-heater.icon";
 
 export function getIconFromId(icon?: string, size: string = "18") {
   if (!icon) {
@@ -55,6 +56,8 @@ export function getIconFromId(icon?: string, size: string = "18") {
       return <DiningTableIcon size={size} />;
     case "heater":
       return <HeaterIcon size={size} />;
+    case "towel_heater":
+      return <TowelHeaterIcon size={size} />;
     case "thermometer":
       return <ThermometerIcon size={size} />;
     case "water_drop":

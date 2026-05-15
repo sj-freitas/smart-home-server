@@ -489,8 +489,8 @@
           },
           {
             "id": "heater",
-            "name": "Heater",
-            "icon": "heater",
+            "name": "Towel Heater",
+            "icon": "towel_heater",
             "type": "smart_switch",
             "integration": {
               "name": "hue_cloud",
