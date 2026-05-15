@@ -12,8 +12,8 @@ export type Room = {
   id: string;
   name: string;
   icon?: string;
-  temperature?: number;
-  humidity?: number;
+  temperature?: number | null;
+  humidity?: number | null;
   devices: Device[];
 }
 export type Home = {

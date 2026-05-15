@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const DEFAULT_SCOPE = ["openid", "email", "profile"];
 const GOOGLE_AUTH_V2_URL = "https://accounts.google.com/o/oauth2/v2";
@@ -10,7 +10,7 @@ type AuthenticationStates =
   | "NeedsLogIn"
   | "LoggedOut";
 
-function buildGoogleAuthUrl(
+export function buildGoogleAuthUrl(
   clientId: string,
   redirectUri: string,
   scope: string[] = DEFAULT_SCOPE,
@@ -27,7 +27,7 @@ function buildGoogleAuthUrl(
   return `${GOOGLE_AUTH_V2_URL}/auth?${params.toString()}`;
 }
 
-function deleteCookie(name: string, path = "/") {
+export function deleteCookie(name: string, path = "/") {
   document.cookie = `${name}=; Max-Age=0; path=${path}`;
 }
 
@@ -48,8 +48,6 @@ export const useAuthentication = (): UseAuthenticationReturnType => {
 
   const runCheck = async () => {
     try {
-      if (appMode !== "LoggedOut") return;
-
       const res = await fetch(`${API_BASE}/check`, {
         method: "GET",
         credentials: "include",
@@ -95,8 +93,9 @@ export const useAuthentication = (): UseAuthenticationReturnType => {
     }
   };
 
-  // run once on mount
+  // Only check auth when in the logged-out state (initial mount or after logout).
   useEffect(() => {
+    if (appMode !== "LoggedOut") return;
     runCheck();
   }, [appMode]);
 
@@ -114,11 +113,10 @@ export const useAuthentication = (): UseAuthenticationReturnType => {
         credentials: "include",
       });
 
-      // Clear Session Cookie
     } catch (e) {
       console.warn("logout failed", e);
     } finally {
-      deleteCookie("Session");
+      deleteCookie("session");
       setAppMode("LoggedOut");
     }
   }, [API_BASE]);

@@ -50,8 +50,8 @@ export default function RoomCard({
       // The request always results in a full state snapshot anyway.
       setStateSuppressSocket(true);
       await onDeviceAction(room.id, device.id, actionId);
-      setStateSuppressSocket(false);
     } finally {
+      setStateSuppressSocket(false);
       setLoadingDevice(null);
     }
   }
@@ -169,11 +169,11 @@ export default function RoomCard({
           style={{
             display: "flex",
             alignItems: "center",
-            paddingTop: "0.4REM",
-            gap: "1REM",
+            paddingTop: "0.4rem",
+            gap: "1rem",
           }}
         >
-          {room.temperature && (
+          {room.temperature != null && (
             <div
               style={{
                 display: "flex",
@@ -188,7 +188,7 @@ export default function RoomCard({
               {formatTemperature(room.temperature)}
             </div>
           )}
-          {room.humidity && (
+          {room.humidity != null && (
             <div
               style={{
                 display: "flex",
@@ -236,7 +236,7 @@ export default function RoomCard({
                     <div style={{ fontWeight: 700 }} className="device-name">
                       {device.name}
                     </div>
-                    {!device.online && (
+                    {device.online === false && (
                       <div
                         style={{
                           display: "flex",
@@ -266,7 +266,7 @@ export default function RoomCard({
                           disabled={
                             readonly ||
                             loadingDevice === device.id ||
-                            !device.online
+                            device.online === false
                           }
                           onClick={() => runAction(device, a.id)}
                         >

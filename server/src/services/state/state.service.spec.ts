@@ -164,7 +164,7 @@ describe("StateService.addToState", () => {
         {
           id: "living-room",
           name: "Living Room",
-          roomInfo: { temperatureDeviceId: "living-room/sensor" },
+          roomInfo: { temperatureDeviceId: "sensor" },
           devices: [
             {
               id: "sensor",

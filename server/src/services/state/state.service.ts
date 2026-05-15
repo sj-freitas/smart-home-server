@@ -17,6 +17,7 @@ function alterHomeState(
   homeState: HomeState | null,
   allDeviceChanges: Iterable<DeviceState>,
 ) {
+  const deviceChanges = Array.from(allDeviceChanges);
   const currHomeState =
     homeState !== null
       ? homeState
@@ -63,12 +64,12 @@ function alterHomeState(
   });
 
   const mappedDevices = new Map(
-    Array.from(allDeviceChanges).map((t) => [`${t.roomId}/${t.id}`, t]),
+    deviceChanges.map((t) => [`${t.roomId}/${t.id}`, t]),
   );
   // Update rooms infos (Temperatures and Humidity)
   for (const currRoom of rooms) {
     const humidityDevice = currRoom.roomInfo?.humidityDeviceId
-      ? mappedDevices.get(currRoom.roomInfo.humidityDeviceId)
+      ? mappedDevices.get(`${currRoom.id}/${currRoom.roomInfo.humidityDeviceId}`)
       : undefined;
     if (
       humidityDevice &&
@@ -78,7 +79,7 @@ function alterHomeState(
       currRoom.humidity = humidityDevice.humidity ?? null;
     }
     const temperatureDevice = currRoom.roomInfo?.temperatureDeviceId
-      ? mappedDevices.get(currRoom.roomInfo.temperatureDeviceId)
+      ? mappedDevices.get(`${currRoom.id}/${currRoom.roomInfo.temperatureDeviceId}`)
       : undefined;
     if (
       temperatureDevice &&
@@ -89,7 +90,7 @@ function alterHomeState(
     }
   }
 
-  for (const currDevice of allDeviceChanges) {
+  for (const currDevice of deviceChanges) {
     const currRoom = rooms.find((t) => t.id === currDevice.roomId);
     if (!currRoom) {
       // Device is probably a bug, this flow should never happen.

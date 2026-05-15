@@ -42,17 +42,9 @@ export default function Application() {
   }, [appMode, startLogin]);
 
   useEffect(() => {
-    if (!iconUrlFromServer) {
-      return;
-    }
-    setFavicon(iconUrlFromServer);
-  }, [iconUrlFromServer]);
-  useEffect(() => {
-    if (!titleFromServer) {
-      return;
-    }
-    setTitle(titleFromServer);
-  }, [titleFromServer]);
+    setFavicon(iconUrlFromServer ?? null);
+    setTitle(titleFromServer ?? null);
+  }, [iconUrlFromServer, titleFromServer]);
 
   useEffect(() => {
     setHome(state);
@@ -105,7 +97,7 @@ export default function Application() {
     <div className="app-shell">
       <div className="header">
         <div className="logo">
-          <img src={home.logo}></img>
+          {home.logo && <img src={home.logo} alt="Home logo" />}
         </div>
         <div>
           <h1>{home.name}</h1>
@@ -117,9 +109,7 @@ export default function Application() {
         rooms={home.rooms}
         readonly={appMode !== "AuthFullAccess"}
         setStateSuppressSocket={setStateSuppressSocket}
-        setDeviceState={(roomId, deviceId, actionId) => {
-          applyDeviceState(roomId, deviceId, actionId);
-        }}
+        setDeviceState={applyDeviceState}
         onDeviceAction={async (roomId, deviceId, actionId) => {
           try {
             const res = await fetch(
@@ -131,9 +121,7 @@ export default function Application() {
               },
             );
             const data = await res.json();
-            if (res.ok && data.runStatus === "success") {
-              applyDeviceState(roomId, deviceId, actionId);
-            } else {
+            if (!res.ok || data.runStatus !== "success") {
               alert("Action failed");
             }
           } catch (err) {

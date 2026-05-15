@@ -13,7 +13,6 @@ export function useHomeState() {
   }, []);
 
   const socketRef = useRef<Socket | null>(null);
-  const lastSeqRef = useRef<number | null>(null);
 
   useEffect(() => {
     const socket = io(SOCKET_URL, {
@@ -26,14 +25,8 @@ export function useHomeState() {
     socketRef.current = socket;
 
     socket.on("connect_error", (err) => console.error("connect_error", err));
-    socket.on("connect", () => {
-      setConnected(true);
-      lastSeqRef.current = null; // force resync logic if needed
-    });
-
-    socket.on("disconnect", () => {
-      setConnected(false);
-    });
+    socket.on("connect", () => setConnected(true));
+    socket.on("disconnect", () => setConnected(false));
 
     socket.on("state:update", (msg: ServerMessage<HomeState>) => {
       if (suppressRef.current) {

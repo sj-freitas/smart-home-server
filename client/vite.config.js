@@ -1,9 +1,16 @@
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 import dns from "node:dns";
 
 dns.setDefaultResultOrder("verbatim");
 
 export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test-setup.ts"],
+  },
   server: {
     allowedHosts: [
       "www.palais-freitas.xyz",

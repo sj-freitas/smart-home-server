@@ -9,7 +9,9 @@ export interface HomeState {
   rooms: {
     id: string;
     name: string;
-    temperature: number;
+    icon?: string;
+    temperature: number | null;
+    humidity: number | null;
     devices: {
       id: string;
       name: string;
