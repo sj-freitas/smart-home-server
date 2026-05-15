@@ -34,7 +34,7 @@ export const DeviceActionZod = z.object({
       "Parameters for the action, if any - these are only validated at run time for specific devices.",
     )
     .optional(),
-  onAction: OnActionZod.optional().readonly(),
+  onAction: z.array(OnActionZod).optional().readonly(),
 });
 
 export const RoomDeviceConfigZod = z.object({

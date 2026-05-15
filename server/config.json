@@ -504,13 +504,15 @@
               {
                 "id": "on",
                 "name": "Heat",
-                "onAction": {
-                  "type": "timer",
-                  "parameters": {
-                    "durationInMinutes": 180,
-                    "action": "bathroom/heater/off"
+                "onAction": [
+                  {
+                    "type": "timer",
+                    "parameters": {
+                      "durationInMinutes": 180,
+                      "action": "bathroom/heater/off"
+                    }
                   }
-                }
+                ]
               }
             ]
           },

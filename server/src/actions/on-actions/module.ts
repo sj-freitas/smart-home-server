@@ -18,8 +18,8 @@ function buildModuleConfig() {
   for (const room of config.home.rooms) {
     for (const device of room.devices) {
       for (const action of device.actions ?? []) {
-        if (action.onAction) {
-          usedTypes.add(action.onAction.type);
+        for (const onAction of action.onAction ?? []) {
+          usedTypes.add(onAction.type);
         }
       }
     }

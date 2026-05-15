@@ -52,9 +52,7 @@ export class ActionRunnerService {
     ]);
     this.homeStateGateway.updateState(newState);
 
-    if (action.onAction) {
-      await this.onActions.handleOnAction(action.onAction);
-    }
+    await Promise.all((action.onAction ?? []).map((onAction) => this.onActions.handleOnAction(onAction)));
 
     return { found: true, actionResult, action };
   }

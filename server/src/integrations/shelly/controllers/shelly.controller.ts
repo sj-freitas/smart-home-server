@@ -53,6 +53,9 @@ export class ShellyController {
     }
 
     const device = this.deviceHelper.getDevice(matchedDevicePath);
+    if (!device) {
+      return { eventConsumed: false };
+    }
     const [roomId, homeDeviceId] = matchedDevicePath.split("/");
 
     const parsedTemperatureInCelsius = Number.parseFloat(temperature);
