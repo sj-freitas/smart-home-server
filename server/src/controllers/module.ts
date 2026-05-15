@@ -3,6 +3,7 @@ import { ConfigModule } from "../config/module";
 import { IntegrationsModule } from "../integrations/module";
 import { ServicesModule } from "../services/module";
 import { SocketsModule } from "../sockets/module";
+import { ActionsModule } from "../actions/module";
 import { HomeController } from "./home.controller";
 import { ActionsController } from "./actions.controller";
 import { AuthController } from "./auth.controller";
@@ -20,7 +21,13 @@ const AuthConfigProvider = {
 
 @Module({
   providers: [AuthConfigProvider],
-  imports: [ConfigModule, IntegrationsModule, ServicesModule, SocketsModule],
+  imports: [
+    ConfigModule,
+    IntegrationsModule,
+    ServicesModule,
+    SocketsModule,
+    ActionsModule,
+  ],
   controllers: [
     ApiController,
     HomeController,

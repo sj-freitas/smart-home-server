@@ -4,6 +4,7 @@ import { ControllersModule } from "./controllers/module";
 import { IntegrationsModule } from "./integrations/module";
 import { ServicesModule } from "./services/module";
 import { SocketsModule } from "./sockets/module";
+import { ActionsModule } from "./actions/module";
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { SocketsModule } from "./sockets/module";
     ServicesModule,
     SocketsModule,
     IntegrationsModule,
+    ActionsModule,
     ControllersModule,
   ],
 })
