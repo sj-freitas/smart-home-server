@@ -347,13 +347,13 @@
                 }
               },
               {
-                "id": "on_dim",
-                "name": "Dim",
+                "id": "on_food",
+                "name": "Food",
                 "parameters": {
                   "on": true,
-                  "bri": 44,
-                  "hue": 7985,
-                  "sat": 107
+                  "bri": 91,
+                  "hue": 6567,
+                  "sat": 103
                 }
               },
               {
