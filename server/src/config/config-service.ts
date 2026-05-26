@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { BaseConfig, BaseConfigZod } from "./base-config.zod";
 
-let existingInstance: ConfigService = null;
+let existingInstance: ConfigService | null = null;
 
 function escapeRegex(key: string) {
   return key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -62,8 +62,7 @@ export class ConfigService {
     const parsed = BaseConfigZod.safeParse(config);
 
     if (!parsed.success) {
-      console.error("Config parsing failed:", parsed.error.message);
-      return;
+      throw new Error(`Config parsing failed: ${parsed.error.message}`);
     }
 
     existingInstance = new ConfigService(parsed.data);

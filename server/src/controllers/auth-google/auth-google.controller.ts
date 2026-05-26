@@ -30,12 +30,16 @@ export class AuthGoogleController {
     }
 
     const token = await this.googleAuthService.getToken(code);
-    if (!token?.idToken) {
+    if (!token?.idToken || !token.accessToken) {
       throw new BadRequestException("No id_token returned by Google");
     }
     const payload = await this.googleAuthService.verifyIdToken(token.idToken);
     if (!payload) {
       throw new BadRequestException("Invalid id_token");
+    }
+
+    if (!payload.email) {
+      throw new BadRequestException("Missing email in id_token");
     }
 
     const session = await this.sessionService.createSession(

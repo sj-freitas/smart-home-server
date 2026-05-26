@@ -44,8 +44,7 @@ export class GoogleSessionService {
     const refreshedToken = await this.googleAuthService.refreshToken(
       currentSession.refreshToken,
     );
-    if (!refreshedToken) {
-      // Error happened!
+    if (!refreshedToken || !refreshedToken.accessToken) {
       return null;
     }
 

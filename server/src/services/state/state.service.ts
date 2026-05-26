@@ -2,6 +2,8 @@ import { StatePersistenceService } from "./state.persistence.service";
 import { DeviceState, HomeState } from "./types.zod";
 import { HomeConfig } from "../../config/home.zod";
 
+type RoomDevices = HomeState["rooms"][number]["devices"];
+
 /**
  * Updates a current state or creates a new one from the config if none is present.
  * It'll add the device changes to the state.
@@ -16,20 +18,19 @@ function alterHomeState(
   homeConfig: HomeConfig,
   homeState: HomeState | null,
   allDeviceChanges: Iterable<DeviceState>,
-) {
-  const currHomeState =
+): HomeState {
+  const currHomeState: HomeState =
     homeState !== null
       ? homeState
       : {
           name: homeConfig.name,
-          pageTitle: homeConfig.pageTitle,
-          logo: homeConfig.iconUrl,
-          faviconUrl: homeConfig.faviconUrl,
-          subTitle: homeConfig.subTitle,
+          pageTitle: homeConfig.pageTitle ?? "",
+          logo: homeConfig.iconUrl ?? "",
+          faviconUrl: homeConfig.faviconUrl ?? "",
+          subTitle: homeConfig.subTitle ?? "",
           rooms: [],
         };
 
-  // const home = this.configService.getConfig().home;
   const rooms = homeConfig.rooms.map((configRoom) => {
     const matchingRoomInState = currHomeState.rooms.find(
       (t) => t.id === configRoom.id,
@@ -42,10 +43,10 @@ function alterHomeState(
         },
         id: configRoom.id,
         name: configRoom.name,
-        icon: configRoom.icon,
-        temperature: null,
-        humidity: null,
-        devices: [],
+        icon: configRoom.icon ?? "",
+        temperature: null as number | null,
+        humidity: null as number | null,
+        devices: [] as RoomDevices,
       };
     }
 
@@ -67,25 +68,20 @@ function alterHomeState(
   );
   // Update rooms infos (Temperatures and Humidity)
   for (const currRoom of rooms) {
-    const humidityDevice = mappedDevices.get(
-      currRoom.roomInfo.humidityDeviceId,
-    );
-    if (
-      humidityDevice &&
-      humidityDevice.humidity !== null &&
-      humidityDevice.humidity !== undefined
-    ) {
-      currRoom.humidity = humidityDevice.humidity ?? null;
+    const { humidityDeviceId, temperatureDeviceId } = currRoom.roomInfo;
+
+    const humidityDevice = humidityDeviceId
+      ? mappedDevices.get(humidityDeviceId)
+      : undefined;
+    if (humidityDevice?.humidity != null) {
+      currRoom.humidity = humidityDevice.humidity;
     }
-    const temperatureDevice = mappedDevices.get(
-      currRoom.roomInfo.temperatureDeviceId,
-    );
-    if (
-      temperatureDevice &&
-      temperatureDevice.temperature !== null &&
-      temperatureDevice.temperature !== undefined
-    ) {
-      currRoom.temperature = temperatureDevice.temperature ?? null;
+
+    const temperatureDevice = temperatureDeviceId
+      ? mappedDevices.get(temperatureDeviceId)
+      : undefined;
+    if (temperatureDevice?.temperature != null) {
+      currRoom.temperature = temperatureDevice.temperature;
     }
   }
 
@@ -114,12 +110,12 @@ function alterHomeState(
       // It's a new device. Not sure how this flow should work ? Maybe do not support it.
       currRoom.devices.push({
         id: currDevice.id,
-        name: currDevice.name,
-        icon: currDevice.icon,
-        type: currDevice.type,
-        actions: currDevice.actions,
-        state: currDevice.state,
-        online: currDevice.online,
+        name: currDevice.name ?? "",
+        icon: currDevice.icon ?? "",
+        type: currDevice.type ?? "smart_switch",
+        actions: currDevice.actions ?? [],
+        state: currDevice.state ?? "off",
+        online: currDevice.online ?? false,
       });
     }
   }
