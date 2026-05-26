@@ -8,8 +8,10 @@ const DEFAULT_USER_AGENT =
 
 async function buildBrowser(): Promise<Browser> {
   console.log("Launching local headless Chrome");
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
   return puppeteer.launch({
     headless: true,
+    executablePath,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
