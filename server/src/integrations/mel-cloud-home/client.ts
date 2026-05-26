@@ -45,7 +45,7 @@ export class MelCloudHomeClient {
       return [];
     }
 
-    const jsonResponse = await response.json();
+    const jsonResponse = await response.json() as { buildings: { airToAirUnits: AirToAirUnit[] }[] };
     const airToAirUnits: AirToAirUnit[] =
       jsonResponse.buildings[0]?.airToAirUnits ?? [];
     const devices = airToAirUnits.map((device) => ({
