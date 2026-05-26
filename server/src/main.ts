@@ -7,6 +7,9 @@ const DEFAULT_PORT = "3001";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const authClientBase = process.env.AUTH_CLIENT_BASE;
+  if (!authClientBase) {
+    throw new Error("AUTH_CLIENT_BASE env var is not set");
+  }
   const allowedOrigins = [
     authClientBase,
     authClientBase.indexOf("www.") >= 0
@@ -17,7 +20,7 @@ async function bootstrap() {
   ].filter(Boolean);
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) {
         return callback(null, true);
       }
