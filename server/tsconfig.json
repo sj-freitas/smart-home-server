@@ -10,7 +10,8 @@
     "baseUrl": "./",
     "skipLibCheck": true,
     "strict": true,
-    "lib": ["ES2020"]
+    "lib": ["ES2020"],
+    "types": ["jest", "node"]
   },
   "include": ["src"]
 }

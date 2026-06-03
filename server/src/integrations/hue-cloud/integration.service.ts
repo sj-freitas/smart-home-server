@@ -83,6 +83,17 @@ export class HueCloudIntegrationService implements IntegrationService<HueCloudIn
   ): Promise<DeviceState[]> {
     const hueDevices = await this.hueClient.getLights();
 
+    if (hueDevices === null) {
+      // This usually means that the bridge is not reachable.
+      // We return all devices as offline in this case.
+      return devices.map(() => ({
+        online: false,
+        state: "off",
+        temperature: null,
+        humidity: null,
+      }));
+    }
+
     return devices.map((currDevice) => {
       const [firstId] = normalizeDeviceIds(currDevice.info.id);
       const matchingDevice = hueDevices[firstId];

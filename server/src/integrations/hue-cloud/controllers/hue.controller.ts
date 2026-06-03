@@ -37,13 +37,14 @@ export class HueController {
   @Get("api/sandbox/hue-lights")
   public async getHueLightsState() {
     // Very useful to get the HUE light configs to create presets.
-    return await this.hueClient.getLights();
-  }
+    const result = await this.hueClient.getLights();
+    
+    if (result === null) {
+      return {
+        error: "Could not fetch lights. This might be because the bridge is offline or we are rate-limited.",
+      }
+    }
 
-  // public async webHookExample(changes: []) {
-    // Set the state via the service
-    // Map the changes with the config mappedChanges = mapChanges(config, changes);
-    // const newState = await this.stateService.consolidateDeviceStates(mappedChanges);
-    // await this.websocketService.update(newState);
-  // }
+    return result;
+  }
 }

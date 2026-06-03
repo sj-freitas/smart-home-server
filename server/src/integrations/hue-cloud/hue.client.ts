@@ -94,7 +94,7 @@ export class HueClient {
     return await this.refreshInFlight;
   }
 
-  public async getLights(): Promise<HueLightsResponse> {
+  public async getLights(): Promise<HueLightsResponse | null> {
     if (!this.hueCloudConfig.bridgeUsername) {
       throw new Error(
         `You are missing the bridgeUsername configuration field in HueCloudIntegration. ` +
@@ -112,6 +112,11 @@ export class HueClient {
         },
       },
     );
+
+    if (response.status !== 200) {
+      console.warn(`Hue Error:`, await response.text(), `Try restarting the bridge or waiting for a bit if you are being rate limited.`);
+      return null;
+    }
 
     const lights = await response.json();
     const parsedLights = HueLightsResponseZod.parse(lights);
