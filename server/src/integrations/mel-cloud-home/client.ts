@@ -45,7 +45,25 @@ export class MelCloudHomeClient {
       return [];
     }
 
-    const jsonResponse = await response.json() as { buildings: { airToAirUnits: AirToAirUnit[] }[] };
+    let jsonResponse = await response.json() as { buildings: { airToAirUnits: AirToAirUnit[] }[] };
+    if (jsonResponse.buildings.length === 0 && this.authenticationCookies.forceRefresh) {
+      console.warn(`MelCloud returned empty buildings, forcing token refresh and retrying.`);
+      await this.authenticationCookies.forceRefresh();
+      const freshCookie = await this.authenticationCookies.retrieveAuthCookies();
+      if (freshCookie) {
+        const retryResponse = await fetch(`${this.apiUrl}/user/context`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "x-csrf": "1",
+            Cookie: freshCookie,
+          },
+        });
+        if (retryResponse.status === 200) {
+          jsonResponse = await retryResponse.json() as { buildings: { airToAirUnits: AirToAirUnit[] }[] };
+        }
+      }
+    }
     const airToAirUnits: AirToAirUnit[] =
       jsonResponse.buildings[0]?.airToAirUnits ?? [];
     const devices = airToAirUnits.map((device) => ({
