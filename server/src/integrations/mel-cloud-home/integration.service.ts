@@ -9,6 +9,7 @@ import {
 import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistence.service";
 import { MelCloudHomeClient } from "./client";
 import {
+  AirToAirUnit,
   AirToAirUnitStateChange,
   AirToAirUnitStateChangeZod,
 } from "./types.zod";
@@ -80,6 +81,30 @@ function tryFindBestMatchingAction(
   return bestMatch.actionId;
 }
 
+function buildDeviceStateFromAirToAirUnit(
+  unit: AirToAirUnit,
+  currDevice: IntegratedDeviceConfig<MelCloudHomeIntegrationDevice>,
+): DeviceState {
+  const settingsRecord = unit.settings.reduce(
+    (acc, s) => ({ ...acc, [s.name]: s.value }),
+    {} as Record<string, string>,
+  );
+  const currentDeviceState = mapSettingsRecordToParameters(settingsRecord);
+  const actionParametersMap = new Map(
+    currDevice.actions.map(
+      (t) => [t.id, AirToAirUnitStateChangeZod.parse(t.parameters)] as [string, AirToAirUnitStateChange],
+    ),
+  );
+  const action = tryFindBestMatchingAction(currentDeviceState, actionParametersMap);
+  const temperature = Number.parseFloat(settingsRecord["RoomTemperature"] ?? "NaN");
+  return {
+    online: true,
+    state: action,
+    temperature: isNaN(temperature) ? null : temperature,
+    humidity: null,
+  };
+}
+
 export class MelCloudHomeIntegrationService implements IntegrationService<MelCloudHomeIntegrationDevice> {
   constructor(
     private readonly melCloudHomeClient: MelCloudHomeClient,
@@ -104,7 +129,7 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
 
     const context = await this.melCloudHomeClient.getContext();
 
-    return devices.map((currDevice) => {
+    return Promise.all(devices.map(async (currDevice) => {
       if (currDevice.type !== "air_conditioner") {
         console.warn(
           `Unsupported device type ${currDevice.type} for MelCloudHome`,
@@ -122,14 +147,16 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
       );
       if (!matchingDevice) {
         console.warn(
-          `MelCloudHome Device ${currDevice.info.deviceId} wasn't found - device not associated with home.`,
+          `MelCloudHome Device ${currDevice.info.deviceId} not in context, fetching directly.`,
         );
-        return {
-          online: false,
-          state: "off",
-          temperature: null,
-          humidity: null,
-        };
+        const unit = await this.melCloudHomeClient.getDevice(currDevice.info.deviceId);
+        if (!unit) {
+          console.warn(
+            `MelCloudHome Device ${currDevice.info.deviceId} wasn't found - device not associated with home.`,
+          );
+          return { online: false, state: "off", temperature: null, humidity: null };
+        }
+        return buildDeviceStateFromAirToAirUnit(unit, currDevice);
       }
 
       const currentDeviceState = mapSettingsRecordToParameters(
@@ -156,7 +183,7 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
         temperature: matchingDevice.room.temperature,
         humidity: null,
       };
-    });
+    }));
   }
 
   async tryRunAction(

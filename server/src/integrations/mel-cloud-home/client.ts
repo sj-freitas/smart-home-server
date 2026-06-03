@@ -82,6 +82,29 @@ export class MelCloudHomeClient {
     return devices;
   }
 
+  async getDevice(deviceId: string): Promise<AirToAirUnit | null> {
+    const authCookie = await this.authenticationCookies.retrieveAuthCookies();
+    if (!authCookie) {
+      throw new Error(`Unexpected missing Auth cookie for MelCloud`);
+    }
+
+    const response = await fetch(`${this.apiUrl}/ataunit/${deviceId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "x-csrf": "1",
+        Cookie: authCookie,
+      },
+    });
+
+    if (response.status !== 200) {
+      console.warn(`MelCloudError getting device ${deviceId}:`, await response.text());
+      return null;
+    }
+
+    return await response.json() as AirToAirUnit;
+  }
+
   async putAtAUnit(deviceId: string, stateChange: AirToAirUnitStateChange) {
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
     if (!authCookie) {
