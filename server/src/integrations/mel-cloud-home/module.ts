@@ -21,7 +21,7 @@ const MelCloudAuthCookiesPersistenceServiceProvider = {
   scope: Scope.DEFAULT,
   useFactory: async (config: ConfigService) => {
     const authCookiesService = new MelCloudAuthCookiesPersistenceService();
-    await spinCookieRefresher(config, authCookiesService);
+    authCookiesService.forceRefresh = await spinCookieRefresher(config, authCookiesService);
 
     return authCookiesService;
   },

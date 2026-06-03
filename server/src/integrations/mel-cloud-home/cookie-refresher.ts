@@ -27,7 +27,7 @@ const createRefreshAuthCookiesFunction =
 export async function spinCookieRefresher(
   config: ConfigService,
   authCookiesService: MelCloudAuthCookiesPersistenceService,
-): Promise<string | null> {
+): Promise<() => Promise<void>> {
   const melCloudHomeConfig = config
     .getConfig()
     .integrations.find((t) => t.name === "mel_cloud_home");
@@ -45,5 +45,5 @@ export async function spinCookieRefresher(
     await startScheduler(refreshAuthCookiesTask, ONE_HOUR_MS);
   }
 
-  return await authCookiesService.retrieveAuthCookies();
+  return refreshAuthCookiesTask;
 }
