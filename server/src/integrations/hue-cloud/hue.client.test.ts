@@ -122,6 +122,34 @@ describe('HueClient.getLights', () => {
     expect(result!['1'].name).toBe('Bedroom');
   });
 
+  it('returns null and logs rate-limit info when the API responds with 429', async () => {
+    const headers = new Map([
+      ['x-ratelimit-limit', '50000, 50000;w=86400'],
+      ['x-ratelimit-reset', '60418'],
+    ]);
+
+    mockFetch.mockResolvedValue({
+      status: 429,
+      headers: { get: (key: string) => headers.get(key) ?? null },
+    });
+
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const { client } = makeClient();
+    const result = await client.getLights();
+
+    expect(result).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('50000 req/24h'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('resets in:'),
+    );
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('remaining'),
+    );
+    warnSpy.mockRestore();
+  });
+
   it('throws when bridgeUsername is missing', async () => {
     const configWithoutBridge: HueCloudIntegration = { ...mockConfig, bridgeUsername: undefined };
     const client = new HueClient(configWithoutBridge, {} as HueOAuth2ClientService, {
