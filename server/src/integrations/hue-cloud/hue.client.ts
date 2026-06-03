@@ -14,6 +14,20 @@ import { withRetries } from "../../helpers/retry";
 
 const fetchWithRetries = withRetries(fetch);
 
+function formatSeconds(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return [h && `${h}h`, m && `${m}m`, s && `${s}s`].filter(Boolean).join(" ") || "0s";
+}
+
+// Parses "50000, 50000;w=86400" → { limit: 50000, windowSeconds: 86400 }
+function parseRateLimitHeader(value: string): { limit: number; windowSeconds: number } | null {
+  const match = value.match(/(\d+);w=(\d+)/);
+  if (!match) return null;
+  return { limit: parseInt(match[1]), windowSeconds: parseInt(match[2]) };
+}
+
 export class HueClient {
   /**
    * URL to start the OAuth2 flow with Hue.
@@ -94,7 +108,7 @@ export class HueClient {
     return await this.refreshInFlight;
   }
 
-  public async getLights(): Promise<HueLightsResponse> {
+  public async getLights(): Promise<HueLightsResponse | null> {
     if (!this.hueCloudConfig.bridgeUsername) {
       throw new Error(
         `You are missing the bridgeUsername configuration field in HueCloudIntegration. ` +
@@ -112,6 +126,27 @@ export class HueClient {
         },
       },
     );
+
+    if (response.status === 429) {
+      const limitHeader = response.headers.get("x-ratelimit-limit");
+      const resetSeconds = response.headers.get("x-ratelimit-reset");
+
+      const parsed = limitHeader ? parseRateLimitHeader(limitHeader) : null;
+      const limitInfo = parsed
+        ? `${parsed.limit} req/${formatSeconds(parsed.windowSeconds)}`
+        : limitHeader;
+      const resetInfo = resetSeconds ? formatSeconds(parseInt(resetSeconds)) : "unknown";
+
+      console.warn(
+        `Hue rate limit exceeded — limit: ${limitInfo}, resets in: ${resetInfo}`,
+      );
+      return null;
+    }
+
+    if (response.status !== 200) {
+      console.warn(`Hue Error (${response.status}):`, await response.text());
+      return null;
+    }
 
     const lights = await response.json();
     const parsedLights = HueLightsResponseZod.parse(lights);
