@@ -2,7 +2,6 @@ import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistenc
 import { getAuthorizationCookies } from "./authorization-cookies";
 import { MelCloudHomeIntegration } from "../../config/integration.zod";
 import { ConfigService } from "../../config/config-service";
-import { startScheduler } from "../../helpers/scheduler";
 import { withRetries } from "../../helpers/retry";
 
 const getAuthorizationCookiesWithRetry = withRetries(getAuthorizationCookies);
@@ -27,7 +26,11 @@ const createRefreshAuthCookiesFunction =
 export async function spinCookieRefresher(
   config: ConfigService,
   authCookiesService: MelCloudAuthCookiesPersistenceService,
+<<<<<<< Updated upstream
 ): Promise<() => Promise<void>> {
+=======
+): Promise<void> {
+>>>>>>> Stashed changes
   const melCloudHomeConfig = config
     .getConfig()
     .integrations.find((t) => t.name === "mel_cloud_home");
@@ -38,12 +41,19 @@ export async function spinCookieRefresher(
     melCloudHomeConfig,
     authCookiesService,
   );
-  const authCookies = await authCookiesService.retrieveAuthCookies();
 
-  // Spin the service once.
+  // Schedule hourly refresh regardless of whether cookies already exist.
+  setInterval(() => void refreshAuthCookiesTask(), ONE_HOUR_MS);
+
+  const authCookies = await authCookiesService.retrieveAuthCookies();
   if (!authCookies) {
-    await startScheduler(refreshAuthCookiesTask, ONE_HOUR_MS);
+    // No cookies in DB — fire Chrome in the background so startup isn't blocked.
+    // The integration returns offline state gracefully until cookies arrive.
+    void refreshAuthCookiesTask();
   }
+<<<<<<< Updated upstream
 
   return refreshAuthCookiesTask;
+=======
+>>>>>>> Stashed changes
 }

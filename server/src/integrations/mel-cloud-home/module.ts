@@ -1,4 +1,5 @@
 import { Module, Scope } from "@nestjs/common";
+import { Pool } from "pg";
 import { MelCloudHomeIntegrationService } from "./integration.service";
 import { ConfigModule } from "../../config/module";
 import { ConfigService } from "../../config/config-service";
@@ -17,11 +18,17 @@ export const MEL_CLOUD_AUTHENTICATION_COOKIES =
   "MelCloudHomeAuthenticationCookies";
 const MelCloudAuthCookiesPersistenceServiceProvider = {
   provide: MEL_CLOUD_AUTHENTICATION_COOKIES,
-  inject: [ConfigService],
+  inject: [ConfigService, Pool],
   scope: Scope.DEFAULT,
+<<<<<<< Updated upstream
   useFactory: async (config: ConfigService) => {
     const authCookiesService = new MelCloudAuthCookiesPersistenceService();
     authCookiesService.forceRefresh = await spinCookieRefresher(config, authCookiesService);
+=======
+  useFactory: async (config: ConfigService, pool: Pool) => {
+    const authCookiesService = new MelCloudAuthCookiesPersistenceService(pool);
+    await spinCookieRefresher(config, authCookiesService);
+>>>>>>> Stashed changes
 
     return authCookiesService;
   },
