@@ -17,6 +17,8 @@ import { McpOAuthProviderService } from "../../services/auth/mcp-oauth-provider.
 import { OAuthClientsPersistenceService } from "../../services/auth/oauth-clients.persistence.service";
 import { OAuthPendingAuthorizationsPersistenceService } from "../../services/auth/oauth-pending-authorizations.persistence.service";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Controller("api/auth/google")
 export class AuthGoogleController {
   constructor(
@@ -67,7 +69,7 @@ export class AuthGoogleController {
       path: "/",
     });
 
-    if (state) {
+    if (state && UUID_REGEX.test(state)) {
       const pending = await this.oauthPendingAuthorizationsPersistenceService.get(state);
       if (pending) {
         const client = await this.oauthClientsPersistenceService.getClient(pending.clientId);
