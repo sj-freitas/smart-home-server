@@ -17,6 +17,11 @@ import { SessionsPersistenceService } from "./auth/sessions.persistence.service"
 import { GoogleAuthConfig } from "./auth/google-auth";
 import { StatePersistenceService } from "./state/state.persistence.service";
 import { StateService } from "./state/state.service";
+import { OAuthClientsPersistenceService } from "./auth/oauth-clients.persistence.service";
+import { OAuthPendingAuthorizationsPersistenceService } from "./auth/oauth-pending-authorizations.persistence.service";
+import { OAuthCodesPersistenceService } from "./auth/oauth-codes.persistence.service";
+import { OAuthTokensPersistenceService } from "./auth/oauth-tokens.persistence.service";
+import { McpOAuthProviderService } from "./auth/mcp-oauth-provider.service";
 
 const HOME_CONFIG = "HOME_CONFIG";
 
@@ -169,6 +174,61 @@ const StateServiceProvider = {
     new StateService(config.getConfig().home, service),
 };
 
+const OAuthClientsPersistenceServiceProvider = {
+  provide: OAuthClientsPersistenceService,
+  inject: [Pool],
+  useFactory: (pool: Pool) => new OAuthClientsPersistenceService(pool),
+};
+
+const OAuthPendingAuthorizationsPersistenceServiceProvider = {
+  provide: OAuthPendingAuthorizationsPersistenceService,
+  inject: [Pool],
+  useFactory: (pool: Pool) => new OAuthPendingAuthorizationsPersistenceService(pool),
+};
+
+const OAuthCodesPersistenceServiceProvider = {
+  provide: OAuthCodesPersistenceService,
+  inject: [Pool],
+  useFactory: (pool: Pool) => new OAuthCodesPersistenceService(pool),
+};
+
+const OAuthTokensPersistenceServiceProvider = {
+  provide: OAuthTokensPersistenceService,
+  inject: [Pool],
+  useFactory: (pool: Pool) => new OAuthTokensPersistenceService(pool),
+};
+
+const McpOAuthProviderServiceProvider = {
+  provide: McpOAuthProviderService,
+  inject: [
+    GoogleAuthConfig,
+    GoogleSessionService,
+    EmailsPersistenceService,
+    OAuthClientsPersistenceService,
+    OAuthPendingAuthorizationsPersistenceService,
+    OAuthCodesPersistenceService,
+    OAuthTokensPersistenceService,
+  ],
+  useFactory: (
+    googleAuthConfig: GoogleAuthConfig,
+    googleSessionService: GoogleSessionService,
+    emailsPersistenceService: EmailsPersistenceService,
+    clientsPersistenceService: OAuthClientsPersistenceService,
+    pendingAuthorizationsPersistenceService: OAuthPendingAuthorizationsPersistenceService,
+    codesPersistenceService: OAuthCodesPersistenceService,
+    tokensPersistenceService: OAuthTokensPersistenceService,
+  ) =>
+    new McpOAuthProviderService(
+      googleAuthConfig,
+      googleSessionService,
+      emailsPersistenceService,
+      clientsPersistenceService,
+      pendingAuthorizationsPersistenceService,
+      codesPersistenceService,
+      tokensPersistenceService,
+    ),
+};
+
 @Module({
   imports: [ConfigModule],
   providers: [
@@ -187,6 +247,11 @@ const StateServiceProvider = {
     PgPoolProvider,
     StatePersistenceServiceProvider,
     StateServiceProvider,
+    OAuthClientsPersistenceServiceProvider,
+    OAuthPendingAuthorizationsPersistenceServiceProvider,
+    OAuthCodesPersistenceServiceProvider,
+    OAuthTokensPersistenceServiceProvider,
+    McpOAuthProviderServiceProvider,
   ],
   exports: [
     OAuth2ClientProvider,
@@ -204,6 +269,11 @@ const StateServiceProvider = {
     PgPoolProvider,
     StatePersistenceServiceProvider,
     StateServiceProvider,
+    OAuthClientsPersistenceServiceProvider,
+    OAuthPendingAuthorizationsPersistenceServiceProvider,
+    OAuthCodesPersistenceServiceProvider,
+    OAuthTokensPersistenceServiceProvider,
+    McpOAuthProviderServiceProvider,
   ],
 })
 export class ServicesModule {}

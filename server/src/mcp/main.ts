@@ -59,7 +59,8 @@ server.registerTool(
   {
     title: "Run a device action",
     description:
-      "Performs an action on a device, e.g. turning a light or AC unit on/off. The roomId, deviceId and actionId must come from the actions listed for that device in get_home_state.",
+      "Performs an action on a device, e.g. turning a light or AC unit on/off. The roomId, deviceId and actionId must come from the actions listed for that device in get_home_state. " +
+      "If the user asks to turn a light 'on' without specifying a brightness/mode, and the device's actions don't include a plain 'on', default to the 'on_bright' action.",
     inputSchema: {
       roomId: z.string().describe("The id of the room the device belongs to"),
       deviceId: z.string().describe("The id of the device within the room"),
