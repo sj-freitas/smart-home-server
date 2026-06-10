@@ -12,6 +12,12 @@ const DEFAULT_PORT = "3001";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // The app runs behind a reverse proxy (e.g. nginx/Caddy) which sets
+  // X-Forwarded-For. Trusting the first hop lets Express (and the MCP auth
+  // router's rate limiter) read the real client IP instead of erroring out.
+  app.getHttpAdapter().getInstance().set("trust proxy", 1);
+
   const authClientBase = process.env.AUTH_CLIENT_BASE;
   if (!authClientBase) {
     throw new Error("AUTH_CLIENT_BASE env var is not set");
