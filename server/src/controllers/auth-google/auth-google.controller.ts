@@ -13,6 +13,9 @@ import { GoogleSessionService } from "../../services/auth/google-session.service
 import { AuthConfig } from "../auth.config";
 import { RequestContext } from "../../services/request-context";
 import { GoogleAuthService } from "../../services/auth/google-auth.service";
+import { McpOAuthProviderService } from "../../services/auth/mcp-oauth-provider.service";
+import { OAuthClientsPersistenceService } from "../../services/auth/oauth-clients.persistence.service";
+import { OAuthPendingAuthorizationsPersistenceService } from "../../services/auth/oauth-pending-authorizations.persistence.service";
 
 @Controller("api/auth/google")
 export class AuthGoogleController {
@@ -21,10 +24,17 @@ export class AuthGoogleController {
     private readonly sessionService: GoogleSessionService,
     private readonly authConfig: AuthConfig,
     private readonly requestContext: RequestContext,
+    private readonly mcpOAuthProvider: McpOAuthProviderService,
+    private readonly oauthClientsPersistenceService: OAuthClientsPersistenceService,
+    private readonly oauthPendingAuthorizationsPersistenceService: OAuthPendingAuthorizationsPersistenceService,
   ) {}
 
   @Get("callback")
-  async callback(@Query("code") code: string, @Res() response: Response) {
+  async callback(
+    @Query("code") code: string,
+    @Query("state") state: string | undefined,
+    @Res() response: Response,
+  ) {
     if (!code) {
       throw new BadRequestException("Missing code");
     }
@@ -56,6 +66,30 @@ export class AuthGoogleController {
       domain: this.authConfig.domainCookie,
       path: "/",
     });
+
+    if (state) {
+      const pending = await this.oauthPendingAuthorizationsPersistenceService.get(state);
+      if (pending) {
+        const client = await this.oauthClientsPersistenceService.getClient(pending.clientId);
+        if (!client) {
+          throw new BadRequestException("Unknown OAuth client for pending authorization");
+        }
+
+        await this.oauthPendingAuthorizationsPersistenceService.delete(state);
+        await this.mcpOAuthProvider.completeAuthorization(
+          client,
+          {
+            redirectUri: pending.redirectUri,
+            codeChallenge: pending.codeChallenge,
+            state: pending.state,
+            resource: pending.resource ? new URL(pending.resource) : undefined,
+          },
+          payload.email,
+          response,
+        );
+        return;
+      }
+    }
 
     return response.redirect(this.authConfig.clientBaseUrl);
   }
