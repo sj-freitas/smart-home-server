@@ -16,7 +16,10 @@ export class McpController {
   ) {}
 
   @All("/")
-  public async handleMcpRequest(@Req() req: Request, @Res() res: Response): Promise<void> {
+  public async handleMcpRequest(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     if (req.method !== "POST") {
       res.status(405).json({
         jsonrpc: "2.0",
@@ -37,7 +40,9 @@ export class McpController {
       actionRunnerService: this.actionRunnerService,
     });
 
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
 
     res.on("close", () => {
       void transport.close();

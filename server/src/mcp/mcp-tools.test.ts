@@ -4,23 +4,29 @@ import { ConfigService } from "../config/config-service";
 import { StatePersistenceService } from "../services/state/state.persistence.service";
 import { ActionRunnerService } from "../actions/action-runner.service";
 
-type ToolHandler = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[] }>;
+type ToolHandler = (
+  args: Record<string, unknown>,
+) => Promise<{ content: { type: string; text: string }[] }>;
 
 function makeServer() {
   const tools = new Map<string, { config: unknown; handler: ToolHandler }>();
   const server = {
-    registerTool: jest.fn((name: string, config: unknown, handler: ToolHandler) => {
-      tools.set(name, { config, handler });
-    }),
+    registerTool: jest.fn(
+      (name: string, config: unknown, handler: ToolHandler) => {
+        tools.set(name, { config, handler });
+      },
+    ),
   } as unknown as McpServer;
 
   return { server, tools };
 }
 
-function makeDeps(opts: {
-  homeState?: unknown;
-  actionResult?: Awaited<ReturnType<ActionRunnerService["run"]>>;
-} = {}) {
+function makeDeps(
+  opts: {
+    homeState?: unknown;
+    actionResult?: Awaited<ReturnType<ActionRunnerService["run"]>>;
+  } = {},
+) {
   const configService = {
     getConfig: jest.fn().mockReturnValue({ home: { name: "my-home" } }),
   } as unknown as ConfigService;
@@ -31,7 +37,11 @@ function makeDeps(opts: {
 
   const actionRunnerService = {
     run: jest.fn().mockResolvedValue(
-      opts.actionResult ?? { found: true, actionResult: true, action: { id: "on_bright" } },
+      opts.actionResult ?? {
+        found: true,
+        actionResult: true,
+        action: { id: "on_bright" },
+      },
     ),
   } as unknown as ActionRunnerService;
 
@@ -51,7 +61,9 @@ describe("registerSmartHomeTools", () => {
     const { server, tools } = makeServer();
     registerSmartHomeTools(server, makeDeps());
 
-    const config = tools.get("run_device_action")!.config as { description: string };
+    const config = tools.get("run_device_action")!.config as {
+      description: string;
+    };
     expect(config.description).toContain("default to the 'on_bright' action");
   });
 
@@ -64,7 +76,9 @@ describe("registerSmartHomeTools", () => {
 
       const result = await tools.get("get_home_state")!.handler({});
 
-      expect(deps.statePersistenceService.getHomeState).toHaveBeenCalledWith("my-home");
+      expect(deps.statePersistenceService.getHomeState).toHaveBeenCalledWith(
+        "my-home",
+      );
       expect(JSON.parse(result.content[0].text)).toEqual(homeState);
     });
   });
@@ -72,7 +86,11 @@ describe("registerSmartHomeTools", () => {
   describe("run_device_action handler", () => {
     it("returns a success response when the action runs", async () => {
       const deps = makeDeps({
-        actionResult: { found: true, actionResult: true, action: { id: "on_bright" } as never },
+        actionResult: {
+          found: true,
+          actionResult: true,
+          action: { id: "on_bright" } as never,
+        },
       });
       const { server, tools } = makeServer();
       registerSmartHomeTools(server, deps);
@@ -83,7 +101,11 @@ describe("registerSmartHomeTools", () => {
         actionId: "on_bright",
       });
 
-      expect(deps.actionRunnerService.run).toHaveBeenCalledWith("living-room", "lamp", "on_bright");
+      expect(deps.actionRunnerService.run).toHaveBeenCalledWith(
+        "living-room",
+        "lamp",
+        "on_bright",
+      );
       const response = JSON.parse(result.content[0].text);
       expect(response).toMatchObject({
         room: "living-room",
@@ -95,7 +117,10 @@ describe("registerSmartHomeTools", () => {
 
     it("returns a failure response when the device or action is not found", async () => {
       const deps = makeDeps({
-        actionResult: { found: false, message: "Device with id lamp not found" },
+        actionResult: {
+          found: false,
+          message: "Device with id lamp not found",
+        },
       });
       const { server, tools } = makeServer();
       registerSmartHomeTools(server, deps);

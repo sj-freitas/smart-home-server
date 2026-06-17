@@ -10,7 +10,10 @@ export type McpToolsDeps = {
   actionRunnerService: ActionRunnerService;
 };
 
-export function registerSmartHomeTools(server: McpServer, deps: McpToolsDeps): void {
+export function registerSmartHomeTools(
+  server: McpServer,
+  deps: McpToolsDeps,
+): void {
   const { configService, statePersistenceService, actionRunnerService } = deps;
 
   server.registerTool(
@@ -26,7 +29,9 @@ export function registerSmartHomeTools(server: McpServer, deps: McpToolsDeps): v
       const state = await statePersistenceService.getHomeState(homeName);
 
       return {
-        content: [{ type: "text" as const, text: JSON.stringify(state, null, 2) }],
+        content: [
+          { type: "text" as const, text: JSON.stringify(state, null, 2) },
+        ],
       };
     },
   );
@@ -41,7 +46,9 @@ export function registerSmartHomeTools(server: McpServer, deps: McpToolsDeps): v
       inputSchema: {
         roomId: z.string().describe("The id of the room the device belongs to"),
         deviceId: z.string().describe("The id of the device within the room"),
-        actionId: z.string().describe("The id of the action to run on the device"),
+        actionId: z
+          .string()
+          .describe("The id of the action to run on the device"),
       },
     },
     async ({ roomId, deviceId, actionId }) => {
@@ -60,12 +67,15 @@ export function registerSmartHomeTools(server: McpServer, deps: McpToolsDeps): v
               room: roomId,
               deviceId,
               action: actionId,
-              message: result.actionResult === true ? undefined : result.actionResult,
+              message:
+                result.actionResult === true ? undefined : result.actionResult,
               runStatus: result.actionResult === true ? "success" : "failure",
             };
 
       return {
-        content: [{ type: "text" as const, text: JSON.stringify(response, null, 2) }],
+        content: [
+          { type: "text" as const, text: JSON.stringify(response, null, 2) },
+        ],
       };
     },
   );

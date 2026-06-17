@@ -61,7 +61,7 @@ async function clickSignInAndLogin(
   const signInButtonSelector = "xpath=//button[normalize-space() = 'Sign In']";
   const signInButton = await page.waitForSelector(signInButtonSelector);
   if (!signInButton) {
-    throw new Error('Sign in button not found');
+    throw new Error("Sign in button not found");
   }
 
   await signInButton.click();

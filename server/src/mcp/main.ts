@@ -49,7 +49,9 @@ server.registerTool(
     const state = await callApi("/api/home");
 
     return {
-      content: [{ type: "text" as const, text: JSON.stringify(state, null, 2) }],
+      content: [
+        { type: "text" as const, text: JSON.stringify(state, null, 2) },
+      ],
     };
   },
 );
@@ -64,7 +66,9 @@ server.registerTool(
     inputSchema: {
       roomId: z.string().describe("The id of the room the device belongs to"),
       deviceId: z.string().describe("The id of the device within the room"),
-      actionId: z.string().describe("The id of the action to run on the device"),
+      actionId: z
+        .string()
+        .describe("The id of the action to run on the device"),
     },
   },
   async ({ roomId, deviceId, actionId }) => {
@@ -74,7 +78,9 @@ server.registerTool(
     );
 
     return {
-      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+      content: [
+        { type: "text" as const, text: JSON.stringify(result, null, 2) },
+      ],
     };
   },
 );

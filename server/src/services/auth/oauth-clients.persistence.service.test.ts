@@ -12,7 +12,9 @@ describe("OAuthClientsPersistenceService.getClient", () => {
     const service = new OAuthClientsPersistenceService(makePool(query));
 
     await expect(service.getClient("missing-client")).resolves.toBeUndefined();
-    expect(query).toHaveBeenCalledWith(expect.stringContaining("SELECT *"), ["missing-client"]);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("SELECT *"), [
+      "missing-client",
+    ]);
   });
 
   it("returns the parsed client without a secret when none is stored", async () => {
@@ -88,7 +90,13 @@ describe("OAuthClientsPersistenceService.registerClient", () => {
     expect(query).toHaveBeenCalledTimes(1);
     const [sql, params] = query.mock.calls[0];
     expect(sql).toContain("INSERT INTO");
-    const [clientId, clientSecretEncrypted, clientIdIssuedAt, clientSecretExpiresAt, metadata] = params;
+    const [
+      clientId,
+      clientSecretEncrypted,
+      clientIdIssuedAt,
+      clientSecretExpiresAt,
+      metadata,
+    ] = params;
     expect(clientId).toBe(client.client_id);
     expect(clientSecretEncrypted).toBeTruthy();
     expect(decryptSecret(clientSecretEncrypted)).toBe(client.client_secret);

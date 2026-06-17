@@ -27,7 +27,9 @@ export const OAuthPendingAuthorizationZod = z
     expiresAt: data.expires_at,
   }));
 
-export type OAuthPendingAuthorization = z.infer<typeof OAuthPendingAuthorizationZod>;
+export type OAuthPendingAuthorization = z.infer<
+  typeof OAuthPendingAuthorizationZod
+>;
 
 const PENDING_AUTHORIZATION_TTL_MS = 5 * 60 * 1000;
 

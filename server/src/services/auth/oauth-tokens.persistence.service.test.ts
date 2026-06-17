@@ -177,6 +177,8 @@ describe("OAuthTokensPersistenceService.deleteByAccessTokenHash", () => {
 
 describe("OAuthTokensPersistenceService.ACCESS_TOKEN_TTL_SECONDS", () => {
   it("is one hour expressed in seconds", () => {
-    expect(OAuthTokensPersistenceService.ACCESS_TOKEN_TTL_SECONDS).toBe(60 * 60);
+    expect(OAuthTokensPersistenceService.ACCESS_TOKEN_TTL_SECONDS).toBe(
+      60 * 60,
+    );
   });
 });

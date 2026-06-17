@@ -38,11 +38,12 @@ export class HueController {
   public async getHueLightsState() {
     // Very useful to get the HUE light configs to create presets.
     const result = await this.hueClient.getLights();
-    
+
     if (result === null) {
       return {
-        error: "Could not fetch lights. This might be because the bridge is offline or we are rate-limited.",
-      }
+        error:
+          "Could not fetch lights. This might be because the bridge is offline or we are rate-limited.",
+      };
     }
 
     return result;

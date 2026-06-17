@@ -13,7 +13,13 @@ import { OnActionsModule } from "./on-actions/module";
 
 const ActionRunnerServiceProvider = {
   provide: ActionRunnerService,
-  inject: [IntegrationsService, StateService, HomeStateGateway, OnActionsService, ConfigService],
+  inject: [
+    IntegrationsService,
+    StateService,
+    HomeStateGateway,
+    OnActionsService,
+    ConfigService,
+  ],
   useFactory: (
     integrations: IntegrationsService,
     stateService: StateService,
@@ -31,7 +37,13 @@ const ActionRunnerServiceProvider = {
 };
 
 @Module({
-  imports: [ConfigModule, ServicesModule, IntegrationsModule, SocketsModule, forwardRef(() => OnActionsModule)],
+  imports: [
+    ConfigModule,
+    ServicesModule,
+    IntegrationsModule,
+    SocketsModule,
+    forwardRef(() => OnActionsModule),
+  ],
   providers: [ActionRunnerServiceProvider],
   exports: [ActionRunnerService],
 })

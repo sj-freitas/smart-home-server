@@ -18,11 +18,15 @@ function formatSeconds(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  return [h && `${h}h`, m && `${m}m`, s && `${s}s`].filter(Boolean).join(" ") || "0s";
+  return (
+    [h && `${h}h`, m && `${m}m`, s && `${s}s`].filter(Boolean).join(" ") || "0s"
+  );
 }
 
 // Parses "50000, 50000;w=86400" → { limit: 50000, windowSeconds: 86400 }
-function parseRateLimitHeader(value: string): { limit: number; windowSeconds: number } | null {
+function parseRateLimitHeader(
+  value: string,
+): { limit: number; windowSeconds: number } | null {
   const match = value.match(/(\d+);w=(\d+)/);
   if (!match) return null;
   return { limit: parseInt(match[1]), windowSeconds: parseInt(match[2]) };
@@ -135,7 +139,9 @@ export class HueClient {
       const limitInfo = parsed
         ? `${parsed.limit} req/${formatSeconds(parsed.windowSeconds)}`
         : limitHeader;
-      const resetInfo = resetSeconds ? formatSeconds(parseInt(resetSeconds)) : "unknown";
+      const resetInfo = resetSeconds
+        ? formatSeconds(parseInt(resetSeconds))
+        : "unknown";
 
       console.warn(
         `Hue rate limit exceeded — limit: ${limitInfo}, resets in: ${resetInfo}`,

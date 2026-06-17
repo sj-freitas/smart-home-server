@@ -4,7 +4,10 @@ import { TimerPersistenceService } from "./timer.persistence.service";
 export class TimerService {
   constructor(private readonly persistence: TimerPersistenceService) {}
 
-  public async schedule(actionPath: string, durationInMinutes: number): Promise<void> {
+  public async schedule(
+    actionPath: string,
+    durationInMinutes: number,
+  ): Promise<void> {
     const executeAt = new Date(Date.now() + durationInMinutes * 60 * 1000);
     await this.persistence.schedule(actionPath, executeAt);
   }

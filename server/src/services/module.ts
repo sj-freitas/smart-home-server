@@ -183,7 +183,8 @@ const OAuthClientsPersistenceServiceProvider = {
 const OAuthPendingAuthorizationsPersistenceServiceProvider = {
   provide: OAuthPendingAuthorizationsPersistenceService,
   inject: [Pool],
-  useFactory: (pool: Pool) => new OAuthPendingAuthorizationsPersistenceService(pool),
+  useFactory: (pool: Pool) =>
+    new OAuthPendingAuthorizationsPersistenceService(pool),
 };
 
 const OAuthCodesPersistenceServiceProvider = {

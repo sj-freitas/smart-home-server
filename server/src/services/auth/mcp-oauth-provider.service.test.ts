@@ -29,10 +29,12 @@ function makeResponse(cookies: Record<string, string> = {}): Response {
   } as unknown as Response;
 }
 
-function makeService(opts: {
-  sessionResult?: { email: string } | null;
-  emailValid?: boolean;
-} = {}) {
+function makeService(
+  opts: {
+    sessionResult?: { email: string } | null;
+    emailValid?: boolean;
+  } = {},
+) {
   const { sessionResult = null, emailValid = true } = opts;
 
   const googleAuthConfig = {
@@ -101,32 +103,45 @@ describe("McpOAuthProviderService.authorize", () => {
 
     await service.authorize(
       CLIENT,
-      { redirectUri: "https://example.com/callback", codeChallenge: "challenge", state: "state-1" },
+      {
+        redirectUri: "https://example.com/callback",
+        codeChallenge: "challenge",
+        state: "state-1",
+      },
       res,
     );
 
-    expect(pendingAuthorizationsPersistenceService.create).toHaveBeenCalledWith({
-      clientId: "client-1",
-      redirectUri: "https://example.com/callback",
-      codeChallenge: "challenge",
-      state: "state-1",
-      scopes: undefined,
-      resource: undefined,
-    });
+    expect(pendingAuthorizationsPersistenceService.create).toHaveBeenCalledWith(
+      {
+        clientId: "client-1",
+        redirectUri: "https://example.com/callback",
+        codeChallenge: "challenge",
+        state: "state-1",
+        scopes: undefined,
+        resource: undefined,
+      },
+    );
 
     const redirectUrl = new URL((res.redirect as jest.Mock).mock.calls[0][0]);
-    expect(redirectUrl.origin + redirectUrl.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
+    expect(redirectUrl.origin + redirectUrl.pathname).toBe(
+      "https://accounts.google.com/o/oauth2/v2/auth",
+    );
     expect(redirectUrl.searchParams.get("state")).toBe("pending-id-1");
     expect(redirectUrl.searchParams.get("client_id")).toBe("google-client-id");
   });
 
   it("redirects to Google login when the session cookie does not resolve to a session", async () => {
-    const { service, pendingAuthorizationsPersistenceService } = makeService({ sessionResult: null });
+    const { service, pendingAuthorizationsPersistenceService } = makeService({
+      sessionResult: null,
+    });
     const res = makeResponse({ session: "bad-session" });
 
     await service.authorize(
       CLIENT,
-      { redirectUri: "https://example.com/callback", codeChallenge: "challenge" },
+      {
+        redirectUri: "https://example.com/callback",
+        codeChallenge: "challenge",
+      },
       res,
     );
 
@@ -142,7 +157,10 @@ describe("McpOAuthProviderService.authorize", () => {
 
     await service.authorize(
       CLIENT,
-      { redirectUri: "https://example.com/callback", codeChallenge: "challenge" },
+      {
+        redirectUri: "https://example.com/callback",
+        codeChallenge: "challenge",
+      },
       res,
     );
 
@@ -150,7 +168,11 @@ describe("McpOAuthProviderService.authorize", () => {
   });
 
   it("issues an authorization code immediately when a valid session exists", async () => {
-    const { service, codesPersistenceService, pendingAuthorizationsPersistenceService } = makeService({
+    const {
+      service,
+      codesPersistenceService,
+      pendingAuthorizationsPersistenceService,
+    } = makeService({
       sessionResult: { email: "user@example.com" },
       emailValid: true,
     });
@@ -158,11 +180,17 @@ describe("McpOAuthProviderService.authorize", () => {
 
     await service.authorize(
       CLIENT,
-      { redirectUri: "https://example.com/callback", codeChallenge: "challenge", state: "state-1" },
+      {
+        redirectUri: "https://example.com/callback",
+        codeChallenge: "challenge",
+        state: "state-1",
+      },
       res,
     );
 
-    expect(pendingAuthorizationsPersistenceService.create).not.toHaveBeenCalled();
+    expect(
+      pendingAuthorizationsPersistenceService.create,
+    ).not.toHaveBeenCalled();
     expect(codesPersistenceService.create).toHaveBeenCalledWith(
       expect.objectContaining({
         clientId: "client-1",
@@ -173,7 +201,9 @@ describe("McpOAuthProviderService.authorize", () => {
     );
 
     const redirectUrl = new URL((res.redirect as jest.Mock).mock.calls[0][0]);
-    expect(redirectUrl.origin + redirectUrl.pathname).toBe("https://example.com/callback");
+    expect(redirectUrl.origin + redirectUrl.pathname).toBe(
+      "https://example.com/callback",
+    );
     expect(redirectUrl.searchParams.get("state")).toBe("state-1");
     expect(redirectUrl.searchParams.get("code")).toBeTruthy();
   });
@@ -186,7 +216,11 @@ describe("McpOAuthProviderService.completeAuthorization", () => {
 
     await service.completeAuthorization(
       CLIENT,
-      { redirectUri: "https://example.com/callback", codeChallenge: "challenge", state: "state-1" },
+      {
+        redirectUri: "https://example.com/callback",
+        codeChallenge: "challenge",
+        state: "state-1",
+      },
       "user@example.com",
       res,
     );
@@ -211,7 +245,10 @@ describe("McpOAuthProviderService.completeAuthorization", () => {
 
     await service.completeAuthorization(
       CLIENT,
-      { redirectUri: "https://example.com/callback", codeChallenge: "challenge" },
+      {
+        redirectUri: "https://example.com/callback",
+        codeChallenge: "challenge",
+      },
       "user@example.com",
       res,
     );
@@ -229,18 +266,18 @@ describe("McpOAuthProviderService.challengeForAuthorizationCode", () => {
       codeChallenge: "challenge-value",
     });
 
-    await expect(service.challengeForAuthorizationCode(CLIENT, "auth-code")).resolves.toBe(
-      "challenge-value",
-    );
+    await expect(
+      service.challengeForAuthorizationCode(CLIENT, "auth-code"),
+    ).resolves.toBe("challenge-value");
   });
 
   it("throws InvalidGrantError when the code does not exist", async () => {
     const { service, codesPersistenceService } = makeService();
     (codesPersistenceService.get as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.challengeForAuthorizationCode(CLIENT, "auth-code")).rejects.toThrow(
-      InvalidGrantError,
-    );
+    await expect(
+      service.challengeForAuthorizationCode(CLIENT, "auth-code"),
+    ).rejects.toThrow(InvalidGrantError);
   });
 
   it("throws InvalidGrantError when the code belongs to a different client", async () => {
@@ -250,15 +287,16 @@ describe("McpOAuthProviderService.challengeForAuthorizationCode", () => {
       codeChallenge: "challenge-value",
     });
 
-    await expect(service.challengeForAuthorizationCode(CLIENT, "auth-code")).rejects.toThrow(
-      InvalidGrantError,
-    );
+    await expect(
+      service.challengeForAuthorizationCode(CLIENT, "auth-code"),
+    ).rejects.toThrow(InvalidGrantError);
   });
 });
 
 describe("McpOAuthProviderService.exchangeAuthorizationCode", () => {
   it("issues tokens for a valid, matching code", async () => {
-    const { service, codesPersistenceService, tokensPersistenceService } = makeService();
+    const { service, codesPersistenceService, tokensPersistenceService } =
+      makeService();
     (codesPersistenceService.consume as jest.Mock).mockResolvedValue({
       clientId: "client-1",
       redirectUri: "https://example.com/callback",
@@ -276,7 +314,9 @@ describe("McpOAuthProviderService.exchangeAuthorizationCode", () => {
     expect(tokens.token_type).toBe("bearer");
     expect(tokens.access_token).toBeTruthy();
     expect(tokens.refresh_token).toBeTruthy();
-    expect(tokens.expires_in).toBe(OAuthTokensPersistenceService.ACCESS_TOKEN_TTL_SECONDS);
+    expect(tokens.expires_in).toBe(
+      OAuthTokensPersistenceService.ACCESS_TOKEN_TTL_SECONDS,
+    );
     expect(tokensPersistenceService.create).toHaveBeenCalledWith(
       expect.objectContaining({
         clientId: "client-1",
@@ -290,9 +330,9 @@ describe("McpOAuthProviderService.exchangeAuthorizationCode", () => {
     const { service, codesPersistenceService } = makeService();
     (codesPersistenceService.consume as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.exchangeAuthorizationCode(CLIENT, "auth-code")).rejects.toThrow(
-      InvalidGrantError,
-    );
+    await expect(
+      service.exchangeAuthorizationCode(CLIENT, "auth-code"),
+    ).rejects.toThrow(InvalidGrantError);
   });
 
   it("throws InvalidGrantError when the code belongs to a different client", async () => {
@@ -303,9 +343,9 @@ describe("McpOAuthProviderService.exchangeAuthorizationCode", () => {
       email: "user@example.com",
     });
 
-    await expect(service.exchangeAuthorizationCode(CLIENT, "auth-code")).rejects.toThrow(
-      InvalidGrantError,
-    );
+    await expect(
+      service.exchangeAuthorizationCode(CLIENT, "auth-code"),
+    ).rejects.toThrow(InvalidGrantError);
   });
 
   it("throws InvalidGrantError when the redirect_uri does not match", async () => {
@@ -317,7 +357,12 @@ describe("McpOAuthProviderService.exchangeAuthorizationCode", () => {
     });
 
     await expect(
-      service.exchangeAuthorizationCode(CLIENT, "auth-code", undefined, "https://attacker.example.com"),
+      service.exchangeAuthorizationCode(
+        CLIENT,
+        "auth-code",
+        undefined,
+        "https://attacker.example.com",
+      ),
     ).rejects.toThrow(InvalidGrantError);
   });
 });
@@ -325,7 +370,9 @@ describe("McpOAuthProviderService.exchangeAuthorizationCode", () => {
 describe("McpOAuthProviderService.exchangeRefreshToken", () => {
   it("rotates the refresh token and issues new tokens", async () => {
     const { service, tokensPersistenceService } = makeService();
-    (tokensPersistenceService.findByRefreshTokenHash as jest.Mock).mockResolvedValue({
+    (
+      tokensPersistenceService.findByRefreshTokenHash as jest.Mock
+    ).mockResolvedValue({
       id: "old-token-id",
       clientId: "client-1",
       email: "user@example.com",
@@ -334,39 +381,49 @@ describe("McpOAuthProviderService.exchangeRefreshToken", () => {
 
     const tokens = await service.exchangeRefreshToken(CLIENT, "refresh-token");
 
-    expect(tokensPersistenceService.deleteById).toHaveBeenCalledWith("old-token-id");
+    expect(tokensPersistenceService.deleteById).toHaveBeenCalledWith(
+      "old-token-id",
+    );
     expect(tokens.access_token).toBeTruthy();
     expect(tokens.refresh_token).toBeTruthy();
   });
 
   it("throws InvalidGrantError when the refresh token is unknown", async () => {
     const { service, tokensPersistenceService } = makeService();
-    (tokensPersistenceService.findByRefreshTokenHash as jest.Mock).mockResolvedValue(null);
+    (
+      tokensPersistenceService.findByRefreshTokenHash as jest.Mock
+    ).mockResolvedValue(null);
 
-    await expect(service.exchangeRefreshToken(CLIENT, "refresh-token")).rejects.toThrow(
-      InvalidGrantError,
-    );
+    await expect(
+      service.exchangeRefreshToken(CLIENT, "refresh-token"),
+    ).rejects.toThrow(InvalidGrantError);
   });
 
   it("throws InvalidGrantError when the refresh token belongs to a different client", async () => {
     const { service, tokensPersistenceService } = makeService();
-    (tokensPersistenceService.findByRefreshTokenHash as jest.Mock).mockResolvedValue({
+    (
+      tokensPersistenceService.findByRefreshTokenHash as jest.Mock
+    ).mockResolvedValue({
       id: "old-token-id",
       clientId: "other-client",
       email: "user@example.com",
     });
 
-    await expect(service.exchangeRefreshToken(CLIENT, "refresh-token")).rejects.toThrow(
-      InvalidGrantError,
-    );
+    await expect(
+      service.exchangeRefreshToken(CLIENT, "refresh-token"),
+    ).rejects.toThrow(InvalidGrantError);
   });
 });
 
 describe("McpOAuthProviderService.verifyAccessToken", () => {
   it("returns AuthInfo for a valid, unexpired token with an allowed email", async () => {
-    const { service, tokensPersistenceService } = makeService({ emailValid: true });
+    const { service, tokensPersistenceService } = makeService({
+      emailValid: true,
+    });
     const accessTokenExpiresAt = new Date(Date.now() + 60_000);
-    (tokensPersistenceService.findByAccessTokenHash as jest.Mock).mockResolvedValue({
+    (
+      tokensPersistenceService.findByAccessTokenHash as jest.Mock
+    ).mockResolvedValue({
       clientId: "client-1",
       email: "user@example.com",
       resource: "https://example.com/mcp",
@@ -382,59 +439,81 @@ describe("McpOAuthProviderService.verifyAccessToken", () => {
       extra: { email: "user@example.com" },
     });
     expect(authInfo.resource?.toString()).toBe("https://example.com/mcp");
-    expect(authInfo.expiresAt).toBe(Math.floor(accessTokenExpiresAt.getTime() / 1000));
+    expect(authInfo.expiresAt).toBe(
+      Math.floor(accessTokenExpiresAt.getTime() / 1000),
+    );
   });
 
   it("throws InvalidTokenError when the token is unknown", async () => {
     const { service, tokensPersistenceService } = makeService();
-    (tokensPersistenceService.findByAccessTokenHash as jest.Mock).mockResolvedValue(null);
+    (
+      tokensPersistenceService.findByAccessTokenHash as jest.Mock
+    ).mockResolvedValue(null);
 
-    await expect(service.verifyAccessToken("access-token")).rejects.toThrow(InvalidTokenError);
+    await expect(service.verifyAccessToken("access-token")).rejects.toThrow(
+      InvalidTokenError,
+    );
   });
 
   it("throws InvalidTokenError when the token has expired", async () => {
     const { service, tokensPersistenceService } = makeService();
-    (tokensPersistenceService.findByAccessTokenHash as jest.Mock).mockResolvedValue({
+    (
+      tokensPersistenceService.findByAccessTokenHash as jest.Mock
+    ).mockResolvedValue({
       clientId: "client-1",
       email: "user@example.com",
       accessTokenExpiresAt: new Date(Date.now() - 60_000),
     });
 
-    await expect(service.verifyAccessToken("access-token")).rejects.toThrow(InvalidTokenError);
+    await expect(service.verifyAccessToken("access-token")).rejects.toThrow(
+      InvalidTokenError,
+    );
   });
 
   it("throws InvalidTokenError when the email is no longer allowed", async () => {
-    const { service, tokensPersistenceService } = makeService({ emailValid: false });
-    (tokensPersistenceService.findByAccessTokenHash as jest.Mock).mockResolvedValue({
+    const { service, tokensPersistenceService } = makeService({
+      emailValid: false,
+    });
+    (
+      tokensPersistenceService.findByAccessTokenHash as jest.Mock
+    ).mockResolvedValue({
       clientId: "client-1",
       email: "user@example.com",
       accessTokenExpiresAt: new Date(Date.now() + 60_000),
     });
 
-    await expect(service.verifyAccessToken("access-token")).rejects.toThrow(InvalidTokenError);
+    await expect(service.verifyAccessToken("access-token")).rejects.toThrow(
+      InvalidTokenError,
+    );
   });
 });
 
 describe("McpOAuthProviderService.revokeToken", () => {
   it("deletes the token by access token hash", async () => {
     const { service, tokensPersistenceService } = makeService();
-    (tokensPersistenceService.findByRefreshTokenHash as jest.Mock).mockResolvedValue(null);
+    (
+      tokensPersistenceService.findByRefreshTokenHash as jest.Mock
+    ).mockResolvedValue(null);
 
     await service.revokeToken(CLIENT, { token: "access-token" });
 
-    expect(tokensPersistenceService.deleteByAccessTokenHash).toHaveBeenCalledWith(
-      hashOpaqueToken("access-token"),
-    );
+    expect(
+      tokensPersistenceService.deleteByAccessTokenHash,
+    ).toHaveBeenCalledWith(hashOpaqueToken("access-token"));
   });
 
   it("also deletes the token when the provided value is a refresh token", async () => {
     const { service, tokensPersistenceService } = makeService();
-    (tokensPersistenceService.findByRefreshTokenHash as jest.Mock).mockResolvedValue({
+    (
+      tokensPersistenceService.findByRefreshTokenHash as jest.Mock
+    ).mockResolvedValue({
       id: "token-id-1",
     });
 
     await service.revokeToken(CLIENT, { token: "refresh-token" });
 
-    expect(tokensPersistenceService.deleteById).toHaveBeenCalledWith("token-id-1");
+    expect(tokensPersistenceService.deleteById).toHaveBeenCalledWith(
+      "token-id-1",
+    );
   });
 });

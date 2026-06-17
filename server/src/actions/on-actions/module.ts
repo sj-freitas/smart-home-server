@@ -8,7 +8,10 @@ import { TimerOnActionModule } from "./timer/module";
 type OnActionDef = { handlerClass: any; moduleClass: any };
 
 const onActionsRegistry = new Map<OnActionTypeNames, OnActionDef>([
-  ["timer", { handlerClass: TimerOnActionHandler, moduleClass: TimerOnActionModule }],
+  [
+    "timer",
+    { handlerClass: TimerOnActionHandler, moduleClass: TimerOnActionModule },
+  ],
 ]);
 
 function buildModuleConfig() {
@@ -32,7 +35,8 @@ function buildModuleConfig() {
   const OnActionsServiceProvider = {
     provide: OnActionsService,
     inject: activeDefs.map((d) => d.handlerClass),
-    useFactory: (...handlers: OnActionHandler[]) => new OnActionsService(handlers),
+    useFactory: (...handlers: OnActionHandler[]) =>
+      new OnActionsService(handlers),
   };
 
   return {
