@@ -14,7 +14,10 @@ import {
   OAuthTokenRevocationRequest,
   OAuthTokens,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
-import { generateOpaqueToken, hashOpaqueToken } from "../../helpers/crypto.helper";
+import {
+  generateOpaqueToken,
+  hashOpaqueToken,
+} from "../../helpers/crypto.helper";
 import { RequestContext } from "../request-context";
 import { GoogleAuthConfig } from "./google-auth";
 import { GoogleSessionService } from "./google-session.service";
@@ -22,9 +25,7 @@ import { EmailsPersistenceService } from "./emails.persistence.service";
 import { OAuthClientsPersistenceService } from "./oauth-clients.persistence.service";
 import { OAuthPendingAuthorizationsPersistenceService } from "./oauth-pending-authorizations.persistence.service";
 import { OAuthCodesPersistenceService } from "./oauth-codes.persistence.service";
-import {
-  OAuthTokensPersistenceService,
-} from "./oauth-tokens.persistence.service";
+import { OAuthTokensPersistenceService } from "./oauth-tokens.persistence.service";
 
 const GOOGLE_AUTH_V2_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
@@ -72,14 +73,16 @@ export class McpOAuthProviderService implements OAuthServerProvider {
       return;
     }
 
-    const pendingId = await this.pendingAuthorizationsPersistenceService.create({
-      clientId: client.client_id,
-      redirectUri: params.redirectUri,
-      codeChallenge: params.codeChallenge,
-      state: params.state,
-      scopes: params.scopes,
-      resource: params.resource?.toString(),
-    });
+    const pendingId = await this.pendingAuthorizationsPersistenceService.create(
+      {
+        clientId: client.client_id,
+        redirectUri: params.redirectUri,
+        codeChallenge: params.codeChallenge,
+        state: params.state,
+        scopes: params.scopes,
+        resource: params.resource?.toString(),
+      },
+    );
 
     res.redirect(this.buildGoogleAuthUrl(pendingId));
   }
@@ -91,7 +94,10 @@ export class McpOAuthProviderService implements OAuthServerProvider {
    */
   public async completeAuthorization(
     client: OAuthClientInformationFull,
-    params: Pick<AuthorizationParams, "redirectUri" | "codeChallenge" | "state" | "resource">,
+    params: Pick<
+      AuthorizationParams,
+      "redirectUri" | "codeChallenge" | "state" | "resource"
+    >,
     email: string,
     res: Response,
   ): Promise<void> {
@@ -119,7 +125,9 @@ export class McpOAuthProviderService implements OAuthServerProvider {
     client: OAuthClientInformationFull,
     authorizationCode: string,
   ): Promise<string> {
-    const code = await this.codesPersistenceService.get(hashOpaqueToken(authorizationCode));
+    const code = await this.codesPersistenceService.get(
+      hashOpaqueToken(authorizationCode),
+    );
     if (!code || code.clientId !== client.client_id) {
       throw new InvalidGrantError("Invalid authorization code");
     }
@@ -134,15 +142,23 @@ export class McpOAuthProviderService implements OAuthServerProvider {
     redirectUri?: string,
     resource?: URL,
   ): Promise<OAuthTokens> {
-    const code = await this.codesPersistenceService.consume(hashOpaqueToken(authorizationCode));
+    const code = await this.codesPersistenceService.consume(
+      hashOpaqueToken(authorizationCode),
+    );
     if (!code || code.clientId !== client.client_id) {
       throw new InvalidGrantError("Invalid authorization code");
     }
     if (redirectUri && code.redirectUri !== redirectUri) {
-      throw new InvalidGrantError("redirect_uri does not match the authorization request");
+      throw new InvalidGrantError(
+        "redirect_uri does not match the authorization request",
+      );
     }
 
-    return this.issueTokens(client, code.email, resource?.toString() ?? code.resource);
+    return this.issueTokens(
+      client,
+      code.email,
+      resource?.toString() ?? code.resource,
+    );
   }
 
   public async exchangeRefreshToken(
@@ -160,7 +176,11 @@ export class McpOAuthProviderService implements OAuthServerProvider {
 
     await this.tokensPersistenceService.deleteById(existing.id);
 
-    return this.issueTokens(client, existing.email, resource?.toString() ?? existing.resource);
+    return this.issueTokens(
+      client,
+      existing.email,
+      resource?.toString() ?? existing.resource,
+    );
   }
 
   public async verifyAccessToken(token: string): Promise<AuthInfo> {
@@ -174,7 +194,9 @@ export class McpOAuthProviderService implements OAuthServerProvider {
       throw new InvalidTokenError("Access token has expired");
     }
 
-    const isEmailValid = await this.emailsPersistenceService.validateEmail(existing.email);
+    const isEmailValid = await this.emailsPersistenceService.validateEmail(
+      existing.email,
+    );
     if (!isEmailValid) {
       throw new InvalidTokenError("User is no longer authorized");
     }
@@ -196,7 +218,8 @@ export class McpOAuthProviderService implements OAuthServerProvider {
     const hash = hashOpaqueToken(request.token);
     await this.tokensPersistenceService.deleteByAccessTokenHash(hash);
 
-    const tokenByRefresh = await this.tokensPersistenceService.findByRefreshTokenHash(hash);
+    const tokenByRefresh =
+      await this.tokensPersistenceService.findByRefreshTokenHash(hash);
     if (tokenByRefresh) {
       await this.tokensPersistenceService.deleteById(tokenByRefresh.id);
     }
@@ -232,12 +255,15 @@ export class McpOAuthProviderService implements OAuthServerProvider {
       return null;
     }
 
-    const session = await this.googleSessionService.validateSession(sessionCookie);
+    const session =
+      await this.googleSessionService.validateSession(sessionCookie);
     if (!session) {
       return null;
     }
 
-    const isEmailValid = await this.emailsPersistenceService.validateEmail(session.email);
+    const isEmailValid = await this.emailsPersistenceService.validateEmail(
+      session.email,
+    );
     return isEmailValid ? session.email : null;
   }
 

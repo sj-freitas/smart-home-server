@@ -78,7 +78,9 @@ export class OAuthTokensPersistenceService {
     return OAuthTokenZod.parse(inserted);
   }
 
-  public async findByAccessTokenHash(accessTokenHash: string): Promise<OAuthToken | null> {
+  public async findByAccessTokenHash(
+    accessTokenHash: string,
+  ): Promise<OAuthToken | null> {
     const { rows } = await this.pool.query(
       `
         SELECT *
@@ -96,7 +98,9 @@ export class OAuthTokensPersistenceService {
     return OAuthTokenZod.parse(matching);
   }
 
-  public async findByRefreshTokenHash(refreshTokenHash: string): Promise<OAuthToken | null> {
+  public async findByRefreshTokenHash(
+    refreshTokenHash: string,
+  ): Promise<OAuthToken | null> {
     const { rows } = await this.pool.query(
       `
         SELECT *

@@ -62,13 +62,11 @@ export class IntegrationsService {
   getIntegrationService(
     integrationName: IntegrationTypeNames,
   ): IntegrationService<unknown> {
-    const found = this.integrations.find(
-      (t) => t.name === integrationName,
-    );
+    const found = this.integrations.find((t) => t.name === integrationName);
     if (!found) {
       throw new Error(`Integration ${integrationName} not supported.`);
     }
-    
+
     return found;
   }
 

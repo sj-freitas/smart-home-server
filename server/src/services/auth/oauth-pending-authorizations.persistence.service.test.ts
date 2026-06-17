@@ -7,8 +7,12 @@ function makePool(queryImpl: jest.Mock): Pool {
 
 describe("OAuthPendingAuthorizationsPersistenceService.create", () => {
   it("inserts a row and returns the generated id", async () => {
-    const query = jest.fn().mockResolvedValue({ rows: [{ id: "pending-id-1" }] });
-    const service = new OAuthPendingAuthorizationsPersistenceService(makePool(query));
+    const query = jest
+      .fn()
+      .mockResolvedValue({ rows: [{ id: "pending-id-1" }] });
+    const service = new OAuthPendingAuthorizationsPersistenceService(
+      makePool(query),
+    );
 
     const id = await service.create({
       clientId: "client-1",
@@ -34,8 +38,12 @@ describe("OAuthPendingAuthorizationsPersistenceService.create", () => {
   });
 
   it("inserts null placeholders for optional fields", async () => {
-    const query = jest.fn().mockResolvedValue({ rows: [{ id: "pending-id-2" }] });
-    const service = new OAuthPendingAuthorizationsPersistenceService(makePool(query));
+    const query = jest
+      .fn()
+      .mockResolvedValue({ rows: [{ id: "pending-id-2" }] });
+    const service = new OAuthPendingAuthorizationsPersistenceService(
+      makePool(query),
+    );
 
     await service.create({
       clientId: "client-1",
@@ -59,7 +67,9 @@ describe("OAuthPendingAuthorizationsPersistenceService.create", () => {
 describe("OAuthPendingAuthorizationsPersistenceService.get", () => {
   it("returns null when no row matches", async () => {
     const query = jest.fn().mockResolvedValue({ rows: [] });
-    const service = new OAuthPendingAuthorizationsPersistenceService(makePool(query));
+    const service = new OAuthPendingAuthorizationsPersistenceService(
+      makePool(query),
+    );
 
     await expect(service.get("missing-id")).resolves.toBeNull();
   });
@@ -81,7 +91,9 @@ describe("OAuthPendingAuthorizationsPersistenceService.get", () => {
         },
       ],
     });
-    const service = new OAuthPendingAuthorizationsPersistenceService(makePool(query));
+    const service = new OAuthPendingAuthorizationsPersistenceService(
+      makePool(query),
+    );
 
     const pending = await service.get("pending-id-1");
 
@@ -101,7 +113,9 @@ describe("OAuthPendingAuthorizationsPersistenceService.get", () => {
 describe("OAuthPendingAuthorizationsPersistenceService.delete", () => {
   it("issues a delete query for the given id", async () => {
     const query = jest.fn().mockResolvedValue({ rows: [] });
-    const service = new OAuthPendingAuthorizationsPersistenceService(makePool(query));
+    const service = new OAuthPendingAuthorizationsPersistenceService(
+      makePool(query),
+    );
 
     await service.delete("pending-id-1");
 

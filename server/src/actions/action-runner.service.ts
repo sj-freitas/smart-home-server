@@ -1,6 +1,9 @@
 import { DeviceAction } from "../config/home.zod";
 import { DeviceHelper } from "../helpers/device-helpers";
-import { IntegrationsService, TryRunActionResult } from "../integrations/integrations-service";
+import {
+  IntegrationsService,
+  TryRunActionResult,
+} from "../integrations/integrations-service";
 import { HomeStateGateway } from "../sockets/home.state.gateway";
 import { ConfigService } from "../config/config-service";
 import { StateService } from "../services/state/state.service";
@@ -54,7 +57,11 @@ export class ActionRunnerService {
       this.homeStateGateway.updateState(newState);
     }
 
-    await Promise.all((action.onAction ?? []).map((onAction) => this.onActions.handleOnAction(onAction)));
+    await Promise.all(
+      (action.onAction ?? []).map((onAction) =>
+        this.onActions.handleOnAction(onAction),
+      ),
+    );
 
     return { found: true, actionResult, action };
   }

@@ -56,8 +56,8 @@ const integrationsMap = new Map<IntegrationTypeNames, ModuleHelper>([
     {
       module: ShellyModule,
       services: [ShellyIntegrationService],
-    }
-  ]
+    },
+  ],
 ]);
 
 function initDynamicIntegrationsProvider() {

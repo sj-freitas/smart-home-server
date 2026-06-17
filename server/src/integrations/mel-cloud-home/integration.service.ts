@@ -92,11 +92,20 @@ function buildDeviceStateFromAirToAirUnit(
   const currentDeviceState = mapSettingsRecordToParameters(settingsRecord);
   const actionParametersMap = new Map(
     currDevice.actions.map(
-      (t) => [t.id, AirToAirUnitStateChangeZod.parse(t.parameters)] as [string, AirToAirUnitStateChange],
+      (t) =>
+        [t.id, AirToAirUnitStateChangeZod.parse(t.parameters)] as [
+          string,
+          AirToAirUnitStateChange,
+        ],
     ),
   );
-  const action = tryFindBestMatchingAction(currentDeviceState, actionParametersMap);
-  const temperature = Number.parseFloat(settingsRecord["RoomTemperature"] ?? "NaN");
+  const action = tryFindBestMatchingAction(
+    currentDeviceState,
+    actionParametersMap,
+  );
+  const temperature = Number.parseFloat(
+    settingsRecord["RoomTemperature"] ?? "NaN",
+  );
   return {
     online: true,
     state: action,
@@ -129,61 +138,70 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
 
     const context = await this.melCloudHomeClient.getContext();
 
-    return Promise.all(devices.map(async (currDevice) => {
-      if (currDevice.type !== "air_conditioner") {
-        console.warn(
-          `Unsupported device type ${currDevice.type} for MelCloudHome`,
+    return Promise.all(
+      devices.map(async (currDevice) => {
+        if (currDevice.type !== "air_conditioner") {
+          console.warn(
+            `Unsupported device type ${currDevice.type} for MelCloudHome`,
+          );
+          return {
+            online: false,
+            state: "off",
+            temperature: null,
+            humidity: null,
+          };
+        }
+
+        const matchingDevice = context.find(
+          (t) => t.id === currDevice.info.deviceId,
         );
+        if (!matchingDevice) {
+          console.warn(
+            `MelCloudHome Device ${currDevice.info.deviceId} not in context, fetching directly.`,
+          );
+          const unit = await this.melCloudHomeClient.getDevice(
+            currDevice.info.deviceId,
+          );
+          if (!unit) {
+            console.warn(
+              `MelCloudHome Device ${currDevice.info.deviceId} wasn't found - device not associated with home.`,
+            );
+            return {
+              online: false,
+              state: "off",
+              temperature: null,
+              humidity: null,
+            };
+          }
+          return buildDeviceStateFromAirToAirUnit(unit, currDevice);
+        }
+
+        const currentDeviceState = mapSettingsRecordToParameters(
+          matchingDevice.settings,
+        );
+        const actionParametersMap = new Map(
+          currDevice.actions.map(
+            (t) =>
+              [t.id, AirToAirUnitStateChangeZod.parse(t.parameters)] as [
+                string,
+                AirToAirUnitStateChange,
+              ],
+          ),
+        );
+
+        const action = tryFindBestMatchingAction(
+          currentDeviceState,
+          actionParametersMap,
+        );
+
         return {
-          online: false,
-          state: "off",
-          temperature: null,
+          online: true,
+          state: action,
+          temperature: matchingDevice.room.temperature,
           humidity: null,
         };
-      }
-
-      const matchingDevice = context.find(
-        (t) => t.id === currDevice.info.deviceId,
-      );
-      if (!matchingDevice) {
-        console.warn(
-          `MelCloudHome Device ${currDevice.info.deviceId} not in context, fetching directly.`,
-        );
-        const unit = await this.melCloudHomeClient.getDevice(currDevice.info.deviceId);
-        if (!unit) {
-          console.warn(
-            `MelCloudHome Device ${currDevice.info.deviceId} wasn't found - device not associated with home.`,
-          );
-          return { online: false, state: "off", temperature: null, humidity: null };
-        }
-        return buildDeviceStateFromAirToAirUnit(unit, currDevice);
-      }
-
-      const currentDeviceState = mapSettingsRecordToParameters(
-        matchingDevice.settings,
-      );
-      const actionParametersMap = new Map(
-        currDevice.actions.map(
-          (t) =>
-            [t.id, AirToAirUnitStateChangeZod.parse(t.parameters)] as [
-              string,
-              AirToAirUnitStateChange,
-            ],
-        ),
-      );
-
-      const action = tryFindBestMatchingAction(
-        currentDeviceState,
-        actionParametersMap,
-      );
-
-      return {
-        online: true,
-        state: action,
-        temperature: matchingDevice.room.temperature,
-        humidity: null,
-      };
-    }));
+      }),
+    );
   }
 
   async tryRunAction(

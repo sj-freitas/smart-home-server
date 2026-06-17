@@ -1,12 +1,16 @@
-export class MelCloudAuthCookiesPersistenceService {
-  private authCookies: string | null = null;
-  public forceRefresh: (() => Promise<void>) | null = null;
+export interface MelCloudAuthCookiesPersistenceService {
+  storeAuthCookies(cookies: string): Promise<void>;
+  retrieveAuthCookies(): Promise<string | null>;
+}
 
-  public async storeAuthCookies(authCookies: string): Promise<void> {
+export class InMemoryMelCloudAuthCookiesPersistenceService implements MelCloudAuthCookiesPersistenceService {
+  private authCookies: string | null = null;
+
+  async storeAuthCookies(authCookies: string): Promise<void> {
     this.authCookies = authCookies;
   }
 
-  public async retrieveAuthCookies(): Promise<string | null> {
+  async retrieveAuthCookies(): Promise<string | null> {
     return this.authCookies;
   }
 }

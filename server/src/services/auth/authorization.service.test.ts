@@ -1,10 +1,10 @@
-import { AuthorizationService } from './authorization.service';
-import { IpValidationService } from '../ip-validation.service';
-import { ApiKeysPersistenceService } from './api-keys.persistence.service';
-import { AuthorizationHeaderVerificationService } from './authorization-header-verification.service';
-import { EmailsPersistenceService } from './emails.persistence.service';
-import { GoogleSessionService } from './google-session.service';
-import { RequestContext } from '../request-context';
+import { AuthorizationService } from "./authorization.service";
+import { IpValidationService } from "../ip-validation.service";
+import { ApiKeysPersistenceService } from "./api-keys.persistence.service";
+import { AuthorizationHeaderVerificationService } from "./authorization-header-verification.service";
+import { EmailsPersistenceService } from "./emails.persistence.service";
+import { GoogleSessionService } from "./google-session.service";
+import { RequestContext } from "../request-context";
 
 function makeService(opts: {
   ipAllowed?: boolean;
@@ -55,47 +55,47 @@ function makeService(opts: {
   );
 }
 
-describe('AuthorizationService.isUserAuthorized', () => {
-  it('returns Authorized immediately when the IP is allowed', async () => {
+describe("AuthorizationService.isUserAuthorized", () => {
+  it("returns Authorized immediately when the IP is allowed", async () => {
     const svc = makeService({ ipAllowed: true });
-    await expect(svc.isUserAuthorized()).resolves.toBe('Authorized');
+    await expect(svc.isUserAuthorized()).resolves.toBe("Authorized");
   });
 
-  describe('when IP check fails', () => {
-    it('returns Authorized when a valid session with an allowed email is present', async () => {
+  describe("when IP check fails", () => {
+    it("returns Authorized when a valid session with an allowed email is present", async () => {
       const svc = makeService({
-        sessionCookie: 'abc123',
-        sessionResult: { email: 'user@example.com' },
+        sessionCookie: "abc123",
+        sessionResult: { email: "user@example.com" },
         emailValid: true,
       });
-      await expect(svc.isUserAuthorized()).resolves.toBe('Authorized');
+      await expect(svc.isUserAuthorized()).resolves.toBe("Authorized");
     });
 
-    it('returns Forbidden when session is valid but the email is not permitted', async () => {
+    it("returns Forbidden when session is valid but the email is not permitted", async () => {
       const svc = makeService({
-        sessionCookie: 'abc123',
-        sessionResult: { email: 'blocked@example.com' },
+        sessionCookie: "abc123",
+        sessionResult: { email: "blocked@example.com" },
         emailValid: false,
       });
-      await expect(svc.isUserAuthorized()).resolves.toBe('Forbidden');
+      await expect(svc.isUserAuthorized()).resolves.toBe("Forbidden");
     });
 
-    it('returns NeedsLogIn when session is null and no Authorization header is present', async () => {
+    it("returns NeedsLogIn when session is null and no Authorization header is present", async () => {
       const svc = makeService({ bearerToken: null });
-      await expect(svc.isUserAuthorized()).resolves.toBe('NeedsLogIn');
+      await expect(svc.isUserAuthorized()).resolves.toBe("NeedsLogIn");
     });
 
-    it('returns Authorized when the Authorization header holds a valid API key', async () => {
+    it("returns Authorized when the Authorization header holds a valid API key", async () => {
       const svc = makeService({
-        bearerToken: 'my-api-key',
-        apiKeyResult: { owner: 'ci-bot' },
+        bearerToken: "my-api-key",
+        apiKeyResult: { owner: "ci-bot" },
       });
-      await expect(svc.isUserAuthorized()).resolves.toBe('Authorized');
+      await expect(svc.isUserAuthorized()).resolves.toBe("Authorized");
     });
 
-    it('returns Forbidden when the API key is not found in the database', async () => {
-      const svc = makeService({ bearerToken: 'bad-key', apiKeyResult: null });
-      await expect(svc.isUserAuthorized()).resolves.toBe('Forbidden');
+    it("returns Forbidden when the API key is not found in the database", async () => {
+      const svc = makeService({ bearerToken: "bad-key", apiKeyResult: null });
+      await expect(svc.isUserAuthorized()).resolves.toBe("Forbidden");
     });
   });
 });

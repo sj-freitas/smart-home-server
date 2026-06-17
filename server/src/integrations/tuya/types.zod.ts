@@ -39,6 +39,10 @@ export const TuyaBatchStatusResponseZod = z.object({
 
 export type TuyaDeviceStatusSimple = z.infer<typeof TuyaDeviceStatusSimpleZod>;
 export type TuyaDevice = z.infer<typeof TuyaDeviceZod>;
-export type TuyaBatchStatusResponse = z.infer<typeof TuyaBatchStatusResponseZod>;
-export type TuyaDeviceCommandResult = z.infer<typeof TuyaDeviceCommandResultZod>;
+export type TuyaBatchStatusResponse = z.infer<
+  typeof TuyaBatchStatusResponseZod
+>;
+export type TuyaDeviceCommandResult = z.infer<
+  typeof TuyaDeviceCommandResultZod
+>;
 export type TuyaDeviceStatus = z.infer<typeof TuyaDeviceStatusZod>;

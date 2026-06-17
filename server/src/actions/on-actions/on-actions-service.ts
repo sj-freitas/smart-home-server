@@ -11,7 +11,9 @@ export class OnActionsService {
   public async handleOnAction(onAction: OnAction): Promise<void> {
     const handler = this.handlers.find((h) => h.type === onAction.type);
     if (!handler) {
-      console.error(`No handler registered for onAction type: ${onAction.type}`);
+      console.error(
+        `No handler registered for onAction type: ${onAction.type}`,
+      );
       return;
     }
     await handler.handle(onAction);

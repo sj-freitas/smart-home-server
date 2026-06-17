@@ -53,11 +53,12 @@ export class IpValidationService {
   /**
    * Validates if a user is able to access the API based only on their IP.
    * If not, returns false.
-   * 
+   *
    * @returns {Boolean} whether a user is able to access the API based only on their IP.
    */
   public isRequestAllowedBasedOnIP(): boolean {
-    const AUTH_ALWAYS_DISALLOW_THE_IP = process.env.AUTH_ALWAYS_DISALLOW_THE_IP === "true";
+    const AUTH_ALWAYS_DISALLOW_THE_IP =
+      process.env.AUTH_ALWAYS_DISALLOW_THE_IP === "true";
     if (AUTH_ALWAYS_DISALLOW_THE_IP) {
       // True means that all requests must be validated regardless of IP. In
       // production we don't want this behavior. We want to have the IP validation,

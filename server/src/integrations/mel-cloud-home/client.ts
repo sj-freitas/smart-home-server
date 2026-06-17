@@ -1,5 +1,8 @@
 import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistence.service";
 import { AirToAirUnit, AirToAirUnitStateChange } from "./types.zod";
+import { withRetries } from "../../helpers/retry";
+
+const MEL_CLOUD_CONTEXT_RETRIES = 3;
 
 export interface RoomDevice {
   id: string;
@@ -22,8 +25,41 @@ export interface RoomDevice {
 export class MelCloudHomeClient {
   constructor(
     private readonly authenticationCookies: MelCloudAuthCookiesPersistenceService,
+    private readonly forceRefresh: (() => Promise<void>) | null,
     private readonly apiUrl: string,
   ) {}
+
+  private async fetchContextAfterTokenRefresh(): Promise<{
+    buildings: { airToAirUnits: AirToAirUnit[] }[];
+  }> {
+    if (this.forceRefresh) {
+      await this.forceRefresh();
+    }
+    const authCookie = await this.authenticationCookies.retrieveAuthCookies();
+    if (!authCookie) {
+      throw new Error(`Unexpected missing Auth cookie for MelCloud`);
+    }
+    const response = await fetch(`${this.apiUrl}/user/context`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "x-csrf": "1",
+        Cookie: authCookie,
+      },
+    });
+    if (response.status !== 200) {
+      throw new Error(
+        `MelCloud context request failed with status ${response.status}`,
+      );
+    }
+    const jsonResponse = (await response.json()) as {
+      buildings: { airToAirUnits: AirToAirUnit[] }[];
+    };
+    if (jsonResponse.buildings.length === 0) {
+      throw new Error(`MelCloud returned empty buildings after token refresh`);
+    }
+    return jsonResponse;
+  }
 
   async getContext(): Promise<RoomDevice[]> {
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
@@ -45,23 +81,27 @@ export class MelCloudHomeClient {
       return [];
     }
 
-    let jsonResponse = await response.json() as { buildings: { airToAirUnits: AirToAirUnit[] }[] };
-    if (jsonResponse.buildings.length === 0 && this.authenticationCookies.forceRefresh) {
-      console.warn(`MelCloud returned empty buildings, forcing token refresh and retrying.`);
-      await this.authenticationCookies.forceRefresh();
-      const freshCookie = await this.authenticationCookies.retrieveAuthCookies();
-      if (freshCookie) {
-        const retryResponse = await fetch(`${this.apiUrl}/user/context`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "x-csrf": "1",
-            Cookie: freshCookie,
-          },
-        });
-        if (retryResponse.status === 200) {
-          jsonResponse = await retryResponse.json() as { buildings: { airToAirUnits: AirToAirUnit[] }[] };
-        }
+    let jsonResponse = (await response.json()) as {
+      buildings: { airToAirUnits: AirToAirUnit[] }[];
+    };
+    if (jsonResponse.buildings.length === 0) {
+      if (!this.forceRefresh) {
+        return [];
+      }
+      console.warn(
+        `MelCloud returned empty buildings, retrying with token refresh.`,
+      );
+      try {
+        jsonResponse = await withRetries(
+          () => this.fetchContextAfterTokenRefresh(),
+          MEL_CLOUD_CONTEXT_RETRIES,
+          0,
+        )();
+      } catch {
+        console.warn(
+          `MelCloud context retry exhausted after ${MEL_CLOUD_CONTEXT_RETRIES} retries.`,
+        );
+        return [];
       }
     }
     const airToAirUnits: AirToAirUnit[] =
@@ -116,11 +156,14 @@ export class MelCloudHomeClient {
     });
 
     if (response.status !== 200) {
-      console.warn(`MelCloudError getting device ${deviceId}:`, await response.text());
+      console.warn(
+        `MelCloudError getting device ${deviceId}:`,
+        await response.text(),
+      );
       return null;
     }
 
-    return await response.json() as AirToAirUnit;
+    return (await response.json()) as AirToAirUnit;
   }
 
   async putAtAUnit(deviceId: string, stateChange: AirToAirUnitStateChange) {

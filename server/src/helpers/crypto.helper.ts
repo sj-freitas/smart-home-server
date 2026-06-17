@@ -8,7 +8,9 @@ import {
 } from "crypto";
 
 const AUTH_API_KEY_SECRET = process.env.AUTH_API_KEY_SECRET!;
-const ENCRYPTION_KEY = createHash("sha256").update(AUTH_API_KEY_SECRET).digest();
+const ENCRYPTION_KEY = createHash("sha256")
+  .update(AUTH_API_KEY_SECRET)
+  .digest();
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
 const ENCRYPTION_IV_LENGTH = 12;
 
@@ -53,7 +55,10 @@ export function hashOpaqueToken(token: string): string {
 export function encryptSecret(plainText: string): string {
   const iv = randomBytes(ENCRYPTION_IV_LENGTH);
   const cipher = createCipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
-  const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(plainText, "utf8"),
+    cipher.final(),
+  ]);
   const authTag = cipher.getAuthTag();
 
   return Buffer.concat([iv, authTag, encrypted]).toString("base64");
@@ -62,11 +67,16 @@ export function encryptSecret(plainText: string): string {
 export function decryptSecret(encryptedText: string): string {
   const buffer = Buffer.from(encryptedText, "base64");
   const iv = buffer.subarray(0, ENCRYPTION_IV_LENGTH);
-  const authTag = buffer.subarray(ENCRYPTION_IV_LENGTH, ENCRYPTION_IV_LENGTH + 16);
+  const authTag = buffer.subarray(
+    ENCRYPTION_IV_LENGTH,
+    ENCRYPTION_IV_LENGTH + 16,
+  );
   const encrypted = buffer.subarray(ENCRYPTION_IV_LENGTH + 16);
 
   const decipher = createDecipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
   decipher.setAuthTag(authTag);
 
-  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString(
+    "utf8",
+  );
 }

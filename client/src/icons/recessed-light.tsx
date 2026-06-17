@@ -1,4 +1,8 @@
-export const RecessedLightIcon = ({ size = 18 }: { size?: string | number }) => (
+export const RecessedLightIcon = ({
+  size = 18,
+}: {
+  size?: string | number;
+}) => (
   <svg
     width={size}
     height={size}

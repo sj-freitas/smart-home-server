@@ -19,19 +19,24 @@ const TimerPersistenceServiceProvider = {
 const TimerServiceProvider = {
   provide: TimerService,
   inject: [TimerPersistenceService],
-  useFactory: (persistence: TimerPersistenceService) => new TimerService(persistence),
+  useFactory: (persistence: TimerPersistenceService) =>
+    new TimerService(persistence),
 };
 
 const TimerOnActionHandlerProvider = {
   provide: TimerOnActionHandler,
   inject: [TimerService],
-  useFactory: (timerService: TimerService) => new TimerOnActionHandler(timerService),
+  useFactory: (timerService: TimerService) =>
+    new TimerOnActionHandler(timerService),
 };
 
 const TimerProcessorProvider = {
   provide: TIMER_PROCESSOR,
   inject: [TimerService, forwardRef(() => ActionRunnerService)] as any[],
-  useFactory: async (timerService: TimerService, runner: ActionRunnerService) => {
+  useFactory: async (
+    timerService: TimerService,
+    runner: ActionRunnerService,
+  ) => {
     await startScheduler(async () => {
       const due = await timerService.getDueActions();
       for (const action of due) {
@@ -39,7 +44,9 @@ const TimerProcessorProvider = {
         const [roomId, deviceId, actionId] = action.actionPath.split("/");
         const result = await runner.run(roomId, deviceId, actionId);
         if (result.found === false) {
-          console.error(`Scheduled action for ${action.actionPath}: ${result.message}`);
+          console.error(
+            `Scheduled action for ${action.actionPath}: ${result.message}`,
+          );
         }
       }
     }, 60_000);

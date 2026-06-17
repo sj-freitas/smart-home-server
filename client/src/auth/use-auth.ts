@@ -90,7 +90,11 @@ export const useAuthentication = (): UseAuthenticationReturnType => {
       console.warn(`Unexpected flow, status code is ${res.status}`);
       setAppMode("AuthRestricted");
     } catch (err) {
-      console.error("Auth check error (caught):", err, err && (err as Error).stack);
+      console.error(
+        "Auth check error (caught):",
+        err,
+        err && (err as Error).stack,
+      );
       setAppMode("AuthRestricted");
     }
   };
