@@ -1,4 +1,7 @@
-export type RoomDeviceTypes = "air_conditioner" | "smart_switch" | "smart_light"
+export type RoomDeviceTypes =
+  | "air_conditioner"
+  | "smart_switch"
+  | "smart_light";
 
 export interface HomeState {
   name: string;
@@ -14,7 +17,7 @@ export interface HomeState {
       id: string;
       name: string;
       icon: string;
-      type: RoomDeviceTypes,
+      type: RoomDeviceTypes;
       actions: {
         id: string;
         name: string;
