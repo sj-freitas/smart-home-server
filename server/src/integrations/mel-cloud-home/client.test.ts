@@ -190,9 +190,9 @@ describe("MelCloudHomeClient.getContext", () => {
     const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
     const result = await client.getContext();
 
-    // withRetries(fn, 3) = 4 total attempts (1 initial + 3 retries)
-    expect(forceRefresh).toHaveBeenCalledTimes(4);
-    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    // withRetries(fn, 1) = 2 total attempts (1 initial + 1 retry)
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(result).toEqual([]);
   });
 
@@ -211,9 +211,9 @@ describe("MelCloudHomeClient.getContext", () => {
     const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
     const result = await client.getContext();
 
-    // withRetries(fn, 3) = 4 total attempts (1 initial + 3 retries)
-    expect(forceRefresh).toHaveBeenCalledTimes(4);
-    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    // withRetries(fn, 1) = 2 total attempts (1 initial + 1 retry)
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(result).toEqual([]);
   });
 
@@ -229,8 +229,8 @@ describe("MelCloudHomeClient.getContext", () => {
     const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
     const result = await client.getContext();
 
-    // withRetries(fn, 3) = 4 total attempts (1 initial + 3 retries); fetch never called on null cookie
-    expect(forceRefresh).toHaveBeenCalledTimes(4);
+    // withRetries(fn, 1) = 2 total attempts (1 initial + 1 retry); fetch never called on null cookie
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(result).toEqual([]);
   });
