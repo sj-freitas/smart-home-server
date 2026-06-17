@@ -7,11 +7,13 @@ import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middlew
 import { AppModule } from "./app.module";
 import * as cookieParser from "cookie-parser";
 import { McpOAuthProviderService } from "./services/auth/mcp-oauth-provider.service";
+import { Logger } from "nestjs-pino";
 
 const DEFAULT_PORT = "3001";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
 
   // The app runs behind a reverse proxy (e.g. nginx/Caddy) which sets
   // X-Forwarded-For. Trusting the first hop lets Express (and the MCP auth
@@ -87,7 +89,7 @@ async function bootstrap() {
   const port = process.env.PORT ?? DEFAULT_PORT;
   await app.listen(port, "0.0.0.0");
 
-  console.log(`Server listening on http://0.0.0.0:${process.env.PORT}`);
+  app.get(Logger).log(`Server listening on http://0.0.0.0:${port}`);
 }
 
 bootstrap();

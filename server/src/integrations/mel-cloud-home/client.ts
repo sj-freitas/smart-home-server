@@ -1,6 +1,7 @@
 import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistence.service";
 import { AirToAirUnit, AirToAirUnitStateChange } from "./types.zod";
 import { withRetries } from "../../helpers/retry";
+import { PinoLogger } from "nestjs-pino";
 
 const MEL_CLOUD_CONTEXT_RETRIES = 1;
 
@@ -31,14 +32,21 @@ export class MelCloudHomeClient {
     private readonly authenticationCookies: MelCloudAuthCookiesPersistenceService,
     private readonly forceRefresh: (() => Promise<void>) | null,
     private readonly apiUrl: string,
+    private readonly logger: PinoLogger,
   ) {}
 
   private callForceRefresh(): Promise<void> {
     if (!this.forceRefresh) return Promise.resolve();
     if (!this.refreshInFlight) {
+      this.logger.info("MelCloud: initiating force token refresh");
       this.refreshInFlight = this.forceRefresh().finally(() => {
         this.refreshInFlight = null;
+        this.logger.info("MelCloud: force token refresh complete");
       });
+    } else {
+      this.logger.debug(
+        "MelCloud: token refresh already in progress, awaiting existing refresh",
+      );
     }
     return this.refreshInFlight;
   }
@@ -49,7 +57,9 @@ export class MelCloudHomeClient {
     await this.callForceRefresh();
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
     if (!authCookie) {
-      throw new Error(`Unexpected missing Auth cookie for MelCloud`);
+      throw new Error(
+        `Unexpected missing auth cookie for MelCloud after refresh`,
+      );
     }
     const response = await fetch(`${this.apiUrl}/user/context`, {
       method: "GET",
@@ -76,7 +86,7 @@ export class MelCloudHomeClient {
   async getContext(): Promise<RoomDevice[]> {
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
     if (!authCookie) {
-      throw new Error(`Unexpected missing Auth cookie for MelCloud`);
+      throw new Error(`Unexpected missing auth cookie for MelCloud`);
     }
 
     const response = await fetch(`${this.apiUrl}/user/context`, {
@@ -89,33 +99,52 @@ export class MelCloudHomeClient {
     });
 
     if (response.status !== 200) {
-      console.warn(`MelCloudError`, await response.text());
+      const body = await response.text();
+      this.logger.warn(
+        { status: response.status, body },
+        "MelCloud: context request failed",
+      );
       return [];
     }
 
     let jsonResponse = (await response.json()) as {
       buildings: { airToAirUnits: AirToAirUnit[] }[];
     };
+
     if (jsonResponse.buildings.length === 0) {
       if (!this.forceRefresh) {
+        this.logger.warn(
+          "MelCloud: empty buildings returned and no forceRefresh available, returning empty state",
+        );
         return [];
       }
-      console.warn(
-        `MelCloud returned empty buildings, retrying with token refresh.`,
+
+      this.logger.warn(
+        "MelCloud: empty buildings returned, triggering token refresh and retrying",
       );
+
       try {
         jsonResponse = await withRetries(
           () => this.fetchContextAfterTokenRefresh(),
           MEL_CLOUD_CONTEXT_RETRIES,
           0,
+          false,
+          (attempt, maxAttempts, err) => {
+            this.logger.warn(
+              { attempt, maxAttempts, err },
+              "MelCloud: context fetch after token refresh failed, retrying",
+            );
+          },
         )();
-      } catch {
-        console.warn(
-          `MelCloud context retry exhausted after ${MEL_CLOUD_CONTEXT_RETRIES} retries.`,
+      } catch (err) {
+        this.logger.error(
+          { err, attempts: MEL_CLOUD_CONTEXT_RETRIES + 1 },
+          "MelCloud: context fetch exhausted all retries after token refresh",
         );
         return [];
       }
     }
+
     const airToAirUnits: AirToAirUnit[] =
       jsonResponse.buildings[0]?.airToAirUnits ?? [];
     const devices = airToAirUnits.map((device) => ({
@@ -149,13 +178,18 @@ export class MelCloudHomeClient {
       ),
     }));
 
+    this.logger.debug(
+      { deviceCount: devices.length },
+      "MelCloud: context fetched successfully",
+    );
+
     return devices;
   }
 
   async getDevice(deviceId: string): Promise<AirToAirUnit | null> {
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
     if (!authCookie) {
-      throw new Error(`Unexpected missing Auth cookie for MelCloud`);
+      throw new Error(`Unexpected missing auth cookie for MelCloud`);
     }
 
     const response = await fetch(`${this.apiUrl}/ataunit/${deviceId}`, {
@@ -168,9 +202,10 @@ export class MelCloudHomeClient {
     });
 
     if (response.status !== 200) {
-      console.warn(
-        `MelCloudError getting device ${deviceId}:`,
-        await response.text(),
+      const body = await response.text();
+      this.logger.warn(
+        { deviceId, status: response.status, body },
+        "MelCloud: getDevice request failed",
       );
       return null;
     }
@@ -181,10 +216,15 @@ export class MelCloudHomeClient {
   async putAtAUnit(deviceId: string, stateChange: AirToAirUnitStateChange) {
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
     if (!authCookie) {
-      throw new Error(`Unexpected missing Auth cookie for MelCloud`);
+      throw new Error(`Unexpected missing auth cookie for MelCloud`);
     }
 
-    await fetch(`${this.apiUrl}/ataunit/${deviceId}`, {
+    this.logger.debug(
+      { deviceId, stateChange },
+      "MelCloud: sending state change to device",
+    );
+
+    const response = await fetch(`${this.apiUrl}/ataunit/${deviceId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -193,6 +233,15 @@ export class MelCloudHomeClient {
       },
       body: JSON.stringify(stateChange),
     });
+
+    if (response.status !== 200) {
+      const body = await response.text();
+      this.logger.warn(
+        { deviceId, status: response.status, body },
+        "MelCloud: putAtAUnit request failed",
+      );
+    }
+
     return true;
   }
 }

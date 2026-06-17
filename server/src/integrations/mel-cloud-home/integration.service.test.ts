@@ -4,6 +4,16 @@ import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistenc
 import { IntegratedDeviceConfig } from "../integrations-service";
 import { MelCloudHomeIntegrationDevice } from "../../config/integration.zod";
 import { AirToAirUnit } from "./types.zod";
+import type { PinoLogger } from "nestjs-pino";
+
+const mockLogger = {
+  trace: jest.fn(),
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  fatal: jest.fn(),
+} as unknown as PinoLogger;
 
 const DEVICE_ID = "5fa0ecbf-2562-401a-be23-cd8a470d9c9d";
 
@@ -135,7 +145,7 @@ function makeService(
       jest.fn().mockResolvedValue("session=abc"),
   } as unknown as MelCloudAuthCookiesPersistenceService;
 
-  return new MelCloudHomeIntegrationService(client, authCookies);
+  return new MelCloudHomeIntegrationService(client, authCookies, mockLogger);
 }
 
 describe("MelCloudHomeIntegrationService.consolidateDeviceStates", () => {

@@ -1,4 +1,5 @@
 import { Module, Scope } from "@nestjs/common";
+import { PinoLogger } from "nestjs-pino";
 import { MelCloudHomeIntegrationService } from "./integration.service";
 import { ConfigModule } from "../../config/module";
 import { ConfigService } from "../../config/config-service";
@@ -32,16 +33,22 @@ const MelCloudHomePollingProvider = {
     MelCloudHomeIntegrationService,
     StateService,
     HomeStateGateway,
+    PinoLogger,
   ],
   useFactory: async (
     config: ConfigService,
     melCLoudHomeIntegration: MelCloudHomeIntegrationService,
     stateService: StateService,
     homeStateGateway: HomeStateGateway,
+    logger: PinoLogger,
   ) => {
     const homeConfig = config.getConfig().home;
 
     await startScheduler(async () => {
+      logger.debug(
+        { source: "background", task: "state-poll" },
+        "MelCloud: polling device state",
+      );
       await updateStateForDevicesOfIntegration(
         homeConfig,
         melCLoudHomeIntegration,
@@ -54,10 +61,11 @@ const MelCloudHomePollingProvider = {
 
 const MelCloudHomeClientProvider = {
   provide: MelCloudHomeClient,
-  inject: [MEL_CLOUD_AUTHENTICATION_COOKIES, ConfigService],
+  inject: [MEL_CLOUD_AUTHENTICATION_COOKIES, ConfigService, PinoLogger],
   useFactory: async (
     melCloudAuthCookiesPersistenceService: MelCloudAuthCookiesPersistenceService,
     config: ConfigService,
+    logger: PinoLogger,
   ) => {
     const melCloudHomeConfig = config
       .getConfig()
@@ -69,24 +77,27 @@ const MelCloudHomeClientProvider = {
     const forceRefresh = await spinCookieRefresher(
       config,
       melCloudAuthCookiesPersistenceService,
+      logger,
     );
 
     return new MelCloudHomeClient(
       melCloudAuthCookiesPersistenceService,
       forceRefresh,
       melCloudHomeConfig.apiUrl,
+      logger,
     );
   },
 };
 
 const MelCloudHomeIntegrationServiceProvider = {
   provide: MelCloudHomeIntegrationService,
-  inject: [MelCloudHomeClient, MEL_CLOUD_AUTHENTICATION_COOKIES],
+  inject: [MelCloudHomeClient, MEL_CLOUD_AUTHENTICATION_COOKIES, PinoLogger],
   useFactory: async (
     client: MelCloudHomeClient,
     cookiesProvider: MelCloudAuthCookiesPersistenceService,
+    logger: PinoLogger,
   ) => {
-    return new MelCloudHomeIntegrationService(client, cookiesProvider);
+    return new MelCloudHomeIntegrationService(client, cookiesProvider, logger);
   },
 };
 

@@ -1,5 +1,15 @@
 import { MelCloudHomeClient } from "./client";
 import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistence.service";
+import type { PinoLogger } from "nestjs-pino";
+
+const mockLogger = {
+  trace: jest.fn(),
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  fatal: jest.fn(),
+} as unknown as PinoLogger;
 
 const API_URL = "https://mel-cloud.example.com";
 const AUTH_COOKIE = "session=abc123";
@@ -74,7 +84,12 @@ function makeClient(
   } as unknown as MelCloudAuthCookiesPersistenceService;
 
   return {
-    client: new MelCloudHomeClient(authCookies, forceRefresh, API_URL),
+    client: new MelCloudHomeClient(
+      authCookies,
+      forceRefresh,
+      API_URL,
+      mockLogger,
+    ),
     authCookies,
   };
 }
@@ -122,7 +137,7 @@ describe("MelCloudHomeClient.getContext", () => {
     });
 
     await expect(client.getContext()).rejects.toThrow(
-      "Unexpected missing Auth cookie",
+      "Unexpected missing auth cookie for MelCloud",
     );
   });
 
