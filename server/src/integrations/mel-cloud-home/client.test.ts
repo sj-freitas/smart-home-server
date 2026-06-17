@@ -84,7 +84,12 @@ function makeClient(
   } as unknown as MelCloudAuthCookiesPersistenceService;
 
   return {
-    client: new MelCloudHomeClient(authCookies, forceRefresh, API_URL, mockLogger),
+    client: new MelCloudHomeClient(
+      authCookies,
+      forceRefresh,
+      API_URL,
+      mockLogger,
+    ),
     authCookies,
   };
 }

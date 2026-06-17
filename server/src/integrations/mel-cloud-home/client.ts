@@ -57,7 +57,9 @@ export class MelCloudHomeClient {
     await this.callForceRefresh();
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
     if (!authCookie) {
-      throw new Error(`Unexpected missing auth cookie for MelCloud after refresh`);
+      throw new Error(
+        `Unexpected missing auth cookie for MelCloud after refresh`,
+      );
     }
     const response = await fetch(`${this.apiUrl}/user/context`, {
       method: "GET",

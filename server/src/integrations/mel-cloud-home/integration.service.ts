@@ -225,7 +225,11 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
         );
 
         this.logger.info(
-          { deviceId: deviceInfo.deviceId, actionId: actionDescription.id, parameters: parsedParameters },
+          {
+            deviceId: deviceInfo.deviceId,
+            actionId: actionDescription.id,
+            parameters: parsedParameters,
+          },
           "MelCloud: executing device action",
         );
 
@@ -238,7 +242,11 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
       }
     } catch (error: unknown) {
       this.logger.error(
-        { err: error, deviceId: deviceInfo.deviceId, actionId: actionDescription.id },
+        {
+          err: error,
+          deviceId: deviceInfo.deviceId,
+          actionId: actionDescription.id,
+        },
         "MelCloud: action execution failed",
       );
       return "There was an error performing the action.";

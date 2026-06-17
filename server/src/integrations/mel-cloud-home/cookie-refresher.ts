@@ -26,7 +26,13 @@ function createRefreshAuthCookiesFunction(
         true,
         (attempt, maxAttempts, err) => {
           logger.warn(
-            { source: "background", task: "cookie-refresh", attempt, maxAttempts, err },
+            {
+              source: "background",
+              task: "cookie-refresh",
+              attempt,
+              maxAttempts,
+              err,
+            },
             "MelCloud: cookie refresh attempt failed, retrying",
           );
         },
