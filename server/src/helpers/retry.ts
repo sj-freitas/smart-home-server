@@ -21,6 +21,7 @@ export class RetryError extends Error {
  * @param retries - number of retries after the first attempt (default: 3)
  * @param intervalMs - base interval in milliseconds between attempts (default: 1000)
  * @param exponential - if true, apply exponential backoff (default: false)
+ * @param onRetry - optional callback fired before each retry with 1-based attempt number, maxAttempts, and the error that caused the retry
  *
  * Returns a function with the same parameter list and return type as `fn`.
  */
@@ -29,6 +30,7 @@ export function withRetries<F extends (...args: any[]) => Promise<any>>(
   retries = 3,
   intervalMs = 1000,
   exponential = false,
+  onRetry?: (attempt: number, maxAttempts: number, error: unknown) => void,
 ): (...args: Parameters<F>) => ReturnType<F> {
   const wrapped = async (...args: Parameters<F>): Promise<any> => {
     const failures: unknown[] = [];
@@ -46,6 +48,8 @@ export function withRetries<F extends (...args: any[]) => Promise<any>>(
         if (isLastAttempt) {
           break;
         }
+
+        onRetry?.(attempt + 1, maxAttempts, err);
 
         // Compute wait time
         const backoffMultiplier = exponential ? 2 ** attempt : 1;

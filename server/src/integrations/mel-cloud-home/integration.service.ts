@@ -13,6 +13,7 @@ import {
   AirToAirUnitStateChange,
   AirToAirUnitStateChangeZod,
 } from "./types.zod";
+import { PinoLogger } from "nestjs-pino";
 
 // Order the fields by the relevance for matching. Score a match by the number of fields that match, but
 // each field has a different weight based on its relevance.
@@ -118,6 +119,7 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
   constructor(
     private readonly melCloudHomeClient: MelCloudHomeClient,
     private readonly authenticationCookies: MelCloudAuthCookiesPersistenceService,
+    private readonly logger: PinoLogger,
   ) {}
 
   public name: "mel_cloud_home" = "mel_cloud_home";
@@ -128,7 +130,11 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
     const authCookies = await this.authenticationCookies.retrieveAuthCookies();
     if (authCookies === null) {
       // This happens when MELCloud is offline most likely, the application needs to be resilient.
-      return devices.map((currDevice) => ({
+      this.logger.warn(
+        { deviceCount: devices.length },
+        "MelCloud: no auth cookies available, reporting all devices offline",
+      );
+      return devices.map(() => ({
         online: false,
         state: "off",
         temperature: null,
@@ -141,8 +147,9 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
     return Promise.all(
       devices.map(async (currDevice) => {
         if (currDevice.type !== "air_conditioner") {
-          console.warn(
-            `Unsupported device type ${currDevice.type} for MelCloudHome`,
+          this.logger.warn(
+            { deviceType: currDevice.type, deviceId: currDevice.info.deviceId },
+            "MelCloud: unsupported device type",
           );
           return {
             online: false,
@@ -156,15 +163,17 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
           (t) => t.id === currDevice.info.deviceId,
         );
         if (!matchingDevice) {
-          console.warn(
-            `MelCloudHome Device ${currDevice.info.deviceId} not in context, fetching directly.`,
+          this.logger.warn(
+            { deviceId: currDevice.info.deviceId },
+            "MelCloud: device not in context, fetching directly",
           );
           const unit = await this.melCloudHomeClient.getDevice(
             currDevice.info.deviceId,
           );
           if (!unit) {
-            console.warn(
-              `MelCloudHome Device ${currDevice.info.deviceId} wasn't found - device not associated with home.`,
+            this.logger.warn(
+              { deviceId: currDevice.info.deviceId },
+              "MelCloud: device not found, likely not associated with home",
             );
             return {
               online: false,
@@ -210,12 +219,14 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
     actionDescription: DeviceAction,
   ): Promise<TryRunActionResult> {
     try {
-      // Only supported type for MEL Cloud Home are Air Conditioners
       if (deviceType === "air_conditioner") {
-        // This is the only time we can verify that the config is correctly formed.
-        // However, this should have been caught earlier in the process.
         const parsedParameters = AirToAirUnitStateChangeZod.parse(
           actionDescription.parameters,
+        );
+
+        this.logger.info(
+          { deviceId: deviceInfo.deviceId, actionId: actionDescription.id, parameters: parsedParameters },
+          "MelCloud: executing device action",
         );
 
         await this.melCloudHomeClient.putAtAUnit(
@@ -226,7 +237,10 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
         return true;
       }
     } catch (error: unknown) {
-      console.error(error);
+      this.logger.error(
+        { err: error, deviceId: deviceInfo.deviceId, actionId: actionDescription.id },
+        "MelCloud: action execution failed",
+      );
       return "There was an error performing the action.";
     }
 

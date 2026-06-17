@@ -4,29 +4,51 @@ import { MelCloudHomeIntegration } from "../../config/integration.zod";
 import { ConfigService } from "../../config/config-service";
 import { startScheduler } from "../../helpers/scheduler";
 import { withRetries } from "../../helpers/retry";
-
-const getAuthorizationCookiesWithRetry = withRetries(getAuthorizationCookies);
+import { PinoLogger } from "nestjs-pino";
 
 const ONE_HOUR_MS = 1000 * 60 * 60 * 1;
-const createRefreshAuthCookiesFunction =
-  (
-    melCloudHomeConfig: MelCloudHomeIntegration,
-    authCookiesService: MelCloudAuthCookiesPersistenceService,
-  ) =>
-  async () => {
-    const cookie = await getAuthorizationCookiesWithRetry(melCloudHomeConfig);
-    if (!cookie) {
-      console.error(
-        "Failed to refresh MelCloudHome authorization cookies. Will retry in the next scheduled run.",
+
+function createRefreshAuthCookiesFunction(
+  melCloudHomeConfig: MelCloudHomeIntegration,
+  authCookiesService: MelCloudAuthCookiesPersistenceService,
+  logger: PinoLogger,
+) {
+  return async () => {
+    logger.info(
+      { source: "background", task: "cookie-refresh" },
+      "MelCloud: starting background cookie refresh",
+    );
+    try {
+      const cookie = await withRetries(
+        () => getAuthorizationCookies(melCloudHomeConfig, logger),
+        3,
+        5_000,
+        true,
+        (attempt, maxAttempts, err) => {
+          logger.warn(
+            { source: "background", task: "cookie-refresh", attempt, maxAttempts, err },
+            "MelCloud: cookie refresh attempt failed, retrying",
+          );
+        },
+      )();
+      await authCookiesService.storeAuthCookies(cookie);
+      logger.info(
+        { source: "background", task: "cookie-refresh" },
+        "MelCloud: background cookie refresh succeeded",
       );
-      return;
+    } catch (err) {
+      logger.error(
+        { source: "background", task: "cookie-refresh", err },
+        "MelCloud: all cookie refresh attempts exhausted, will retry on next scheduled run",
+      );
     }
-    await authCookiesService.storeAuthCookies(cookie);
   };
+}
 
 export async function spinCookieRefresher(
   config: ConfigService,
   authCookiesService: MelCloudAuthCookiesPersistenceService,
+  logger: PinoLogger,
 ): Promise<() => Promise<void>> {
   const melCloudHomeConfig = config
     .getConfig()
@@ -37,11 +59,15 @@ export async function spinCookieRefresher(
   const refreshAuthCookiesTask = createRefreshAuthCookiesFunction(
     melCloudHomeConfig,
     authCookiesService,
+    logger,
   );
   const authCookies = await authCookiesService.retrieveAuthCookies();
 
-  // Spin the service once.
   if (!authCookies) {
+    logger.info(
+      { source: "background", task: "cookie-refresh" },
+      "MelCloud: no existing cookies found, performing initial refresh and scheduling periodic runs",
+    );
     await startScheduler(refreshAuthCookiesTask, ONE_HOUR_MS);
   }
 
