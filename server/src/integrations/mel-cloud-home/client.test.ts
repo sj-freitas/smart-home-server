@@ -190,9 +190,9 @@ describe("MelCloudHomeClient.getContext", () => {
     const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
     const result = await client.getContext();
 
-    // withRetries(fn, 3) = 4 total attempts (1 initial + 3 retries)
-    expect(forceRefresh).toHaveBeenCalledTimes(4);
-    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    // withRetries(fn, 1) = 2 total attempts (1 initial + 1 retry)
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(result).toEqual([]);
   });
 
@@ -211,9 +211,9 @@ describe("MelCloudHomeClient.getContext", () => {
     const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
     const result = await client.getContext();
 
-    // withRetries(fn, 3) = 4 total attempts (1 initial + 3 retries)
-    expect(forceRefresh).toHaveBeenCalledTimes(4);
-    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    // withRetries(fn, 1) = 2 total attempts (1 initial + 1 retry)
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(result).toEqual([]);
   });
 
@@ -229,9 +229,42 @@ describe("MelCloudHomeClient.getContext", () => {
     const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
     const result = await client.getContext();
 
-    // withRetries(fn, 3) = 4 total attempts (1 initial + 3 retries); fetch never called on null cookie
-    expect(forceRefresh).toHaveBeenCalledTimes(4);
+    // withRetries(fn, 1) = 2 total attempts (1 initial + 1 retry); fetch never called on null cookie
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(result).toEqual([]);
+  });
+
+  it("deduplicates concurrent forceRefresh calls — only one Puppeteer session runs at a time", async () => {
+    let resolveRefresh!: () => void;
+    const refreshPromise = new Promise<void>((res) => {
+      resolveRefresh = res;
+    });
+    const forceRefresh = jest.fn().mockReturnValue(refreshPromise);
+    const retrieveAuthCookies = jest
+      .fn()
+      .mockResolvedValueOnce(AUTH_COOKIE)
+      .mockResolvedValueOnce(AUTH_COOKIE)
+      .mockResolvedValue(FRESH_COOKIE);
+
+    fetchSpy
+      .mockResolvedValueOnce(makeJsonResponse([]))
+      .mockResolvedValueOnce(makeJsonResponse([]))
+      .mockResolvedValue(makeJsonResponse([{ airToAirUnits: [minimalUnit] }]));
+
+    const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
+
+    // Fire two concurrent getContext calls while the first refresh is still in flight
+    const [r1, r2] = await Promise.all([
+      client.getContext(),
+      client.getContext(),
+      // Unblock the shared refresh after both calls are waiting on it
+      Promise.resolve().then(() => resolveRefresh()),
+    ]);
+
+    // forceRefresh should have been called exactly once despite two concurrent callers
+    expect(forceRefresh).toHaveBeenCalledTimes(1);
+    expect(r1).toHaveLength(1);
+    expect(r2).toHaveLength(1);
   });
 });

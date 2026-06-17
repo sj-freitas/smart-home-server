@@ -2,7 +2,7 @@ import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistenc
 import { AirToAirUnit, AirToAirUnitStateChange } from "./types.zod";
 import { withRetries } from "../../helpers/retry";
 
-const MEL_CLOUD_CONTEXT_RETRIES = 3;
+const MEL_CLOUD_CONTEXT_RETRIES = 1;
 
 export interface RoomDevice {
   id: string;
@@ -23,18 +23,30 @@ export interface RoomDevice {
  * this state somehow.
  */
 export class MelCloudHomeClient {
+  // Deduplicates concurrent Puppeteer sessions: if a refresh is already in
+  // flight, new callers await the same promise instead of launching their own.
+  private refreshInFlight: Promise<void> | null = null;
+
   constructor(
     private readonly authenticationCookies: MelCloudAuthCookiesPersistenceService,
     private readonly forceRefresh: (() => Promise<void>) | null,
     private readonly apiUrl: string,
   ) {}
 
+  private callForceRefresh(): Promise<void> {
+    if (!this.forceRefresh) return Promise.resolve();
+    if (!this.refreshInFlight) {
+      this.refreshInFlight = this.forceRefresh().finally(() => {
+        this.refreshInFlight = null;
+      });
+    }
+    return this.refreshInFlight;
+  }
+
   private async fetchContextAfterTokenRefresh(): Promise<{
     buildings: { airToAirUnits: AirToAirUnit[] }[];
   }> {
-    if (this.forceRefresh) {
-      await this.forceRefresh();
-    }
+    await this.callForceRefresh();
     const authCookie = await this.authenticationCookies.retrieveAuthCookies();
     if (!authCookie) {
       throw new Error(`Unexpected missing Auth cookie for MelCloud`);
