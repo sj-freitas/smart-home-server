@@ -14,9 +14,7 @@ const GranularityZod = z
 const StringArrayZod = z
   .union([z.string(), z.array(z.string())])
   .optional()
-  .transform((v) =>
-    v === undefined ? undefined : Array.isArray(v) ? v : [v],
-  );
+  .transform((v) => (v === undefined ? undefined : Array.isArray(v) ? v : [v]));
 
 const ClimateQueryZod = z.object({
   roomIds: StringArrayZod,

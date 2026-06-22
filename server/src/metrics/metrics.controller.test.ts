@@ -21,7 +21,9 @@ function makeController(opts?: {
   return { controller, svc };
 }
 
-function makeClimateRow(overrides: Partial<ClimateAggregate> = {}): ClimateAggregate {
+function makeClimateRow(
+  overrides: Partial<ClimateAggregate> = {},
+): ClimateAggregate {
   return {
     bucket: new Date("2024-01-01T12:00:00Z"),
     roomId: "living-room",
@@ -32,7 +34,9 @@ function makeClimateRow(overrides: Partial<ClimateAggregate> = {}): ClimateAggre
   };
 }
 
-function makeActionRow(overrides: Partial<DeviceActionMetric> = {}): DeviceActionMetric {
+function makeActionRow(
+  overrides: Partial<DeviceActionMetric> = {},
+): DeviceActionMetric {
   return {
     id: "uuid-1",
     recordedAt: new Date("2024-01-01T14:00:00Z"),
