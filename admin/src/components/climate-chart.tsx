@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import {
   ComposedChart,
   Line,
-  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -241,30 +240,10 @@ export function ClimateChart({
             x={new Date(e.recordedAt).getTime()}
             stroke={deviceColorMap.get(e.deviceId) ?? "#888"}
             strokeDasharray="3 3"
-            strokeWidth={1.5}
-            label={{
-              value: e.actionId,
-              position: "top",
-              fill: deviceColorMap.get(e.deviceId) ?? "#888",
-              fontSize: 9,
-            }}
+            strokeWidth={1}
+            strokeOpacity={0.6}
           />
         ))}
-
-        {/* Hidden scatter to place device action dots on the chart for legend */}
-        {visibleActions.length > 0 && (
-          <Scatter
-            yAxisId="main"
-            name="Device actions"
-            data={visibleActions.map((e) => ({
-              ts: new Date(e.recordedAt).getTime(),
-              y: null,
-            }))}
-            dataKey="y"
-            fill="#888"
-            shape={() => null}
-          />
-        )}
 
         <Brush
           dataKey="ts"

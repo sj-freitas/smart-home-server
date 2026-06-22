@@ -11,7 +11,6 @@ jest.mock("recharts", () => {
   const mockComponents = [
     "ComposedChart",
     "Line",
-    "Scatter",
     "XAxis",
     "YAxis",
     "CartesianGrid",
