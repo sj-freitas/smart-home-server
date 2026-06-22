@@ -15,6 +15,7 @@ import { AuthConfig } from "./auth.config";
 import { AuthGoogleController } from "./auth-google/auth-google.controller";
 import { ApiController } from "./api.controller";
 import { AdminController } from "./admin.controller";
+import { MetricsController } from "src/metrics/metrics.controller";
 
 const AuthConfigProvider = {
   provide: AuthConfig,
@@ -40,6 +41,7 @@ const AuthConfigProvider = {
     SandboxController,
     AdminController,
     AdminDashboardController,
+    MetricsController,
     StaticController,
   ],
 })
