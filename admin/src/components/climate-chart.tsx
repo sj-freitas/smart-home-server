@@ -127,14 +127,14 @@ const tooltipStyle: React.CSSProperties = {
 interface ClimateChartProps {
   series: ClimateSeries[];
   deviceActions: DeviceActionEvent[];
-  showHumidity: boolean;
+  mode: "temperature" | "humidity";
   selectedDeviceIds: string[];
 }
 
 export function ClimateChart({
   series,
   deviceActions,
-  showHumidity,
+  mode,
   selectedDeviceIds,
 }: ClimateChartProps) {
   const data = useMemo(() => mergeSeriesIntoTimeline(series), [series]);
@@ -185,32 +185,18 @@ export function ClimateChart({
           tickCount={8}
         />
         <YAxis
-          yAxisId="temp"
+          yAxisId="main"
           orientation="left"
+          domain={mode === "humidity" ? [0, 100] : ["auto", "auto"]}
           tick={{ fontSize: 11, fill: "#aaa" }}
           label={{
-            value: "°C",
+            value: mode === "temperature" ? "°C" : "%",
             angle: -90,
             position: "insideLeft",
             fill: "#aaa",
             fontSize: 12,
           }}
         />
-        {showHumidity && (
-          <YAxis
-            yAxisId="hum"
-            orientation="right"
-            domain={[0, 100]}
-            tick={{ fontSize: 11, fill: "#aaa" }}
-            label={{
-              value: "%",
-              angle: 90,
-              position: "insideRight",
-              fill: "#aaa",
-              fontSize: 12,
-            }}
-          />
-        )}
 
         <Tooltip
           content={<CustomTooltip deviceEvents={deviceEventsByTs} />}
@@ -218,43 +204,40 @@ export function ClimateChart({
         />
         <Legend wrapperStyle={{ color: "#ccc", fontSize: 12 }} />
 
-        {/* Temperature line per room */}
-        {series.map((room, i) => (
-          <Line
-            key={`${room.roomId}_temp`}
-            yAxisId="temp"
-            type="monotone"
-            dataKey={`${room.roomId}_temp`}
-            name={`${room.roomName} (°C)`}
-            stroke={ROOM_COLORS[i % ROOM_COLORS.length]}
-            dot={false}
-            strokeWidth={2}
-            connectNulls={false}
-          />
-        ))}
-
-        {/* Humidity dashed line per room */}
-        {showHumidity &&
-          series.map((room, i) => (
+        {/* Lines for the active mode */}
+        {series.map((room, i) =>
+          mode === "temperature" ? (
+            <Line
+              key={`${room.roomId}_temp`}
+              yAxisId="main"
+              type="monotone"
+              dataKey={`${room.roomId}_temp`}
+              name={`${room.roomName} (°C)`}
+              stroke={ROOM_COLORS[i % ROOM_COLORS.length]}
+              dot={false}
+              strokeWidth={2}
+              connectNulls={false}
+            />
+          ) : (
             <Line
               key={`${room.roomId}_hum`}
-              yAxisId="hum"
+              yAxisId="main"
               type="monotone"
               dataKey={`${room.roomId}_hum`}
               name={`${room.roomName} (RH%)`}
               stroke={ROOM_COLORS[i % ROOM_COLORS.length]}
-              strokeDasharray="4 4"
               dot={false}
-              strokeWidth={1.5}
+              strokeWidth={2}
               connectNulls={false}
             />
-          ))}
+          ),
+        )}
 
         {/* Device action reference lines */}
         {visibleActions.map((e, i) => (
           <ReferenceLine
             key={`action-${i}`}
-            yAxisId="temp"
+            yAxisId="main"
             x={new Date(e.recordedAt).getTime()}
             stroke={deviceColorMap.get(e.deviceId) ?? "#888"}
             strokeDasharray="3 3"
@@ -271,7 +254,7 @@ export function ClimateChart({
         {/* Hidden scatter to place device action dots on the chart for legend */}
         {visibleActions.length > 0 && (
           <Scatter
-            yAxisId="temp"
+            yAxisId="main"
             name="Device actions"
             data={visibleActions.map((e) => ({
               ts: new Date(e.recordedAt).getTime(),

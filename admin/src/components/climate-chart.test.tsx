@@ -47,7 +47,7 @@ describe("ClimateChart", () => {
       <ClimateChart
         series={[]}
         deviceActions={noActions}
-        showHumidity={false}
+        mode="temperature"
         selectedDeviceIds={[]}
       />,
     );
@@ -61,33 +61,32 @@ describe("ClimateChart", () => {
       <ClimateChart
         series={[makeSeries()]}
         deviceActions={noActions}
-        showHumidity={false}
+        mode="temperature"
         selectedDeviceIds={[]}
       />,
     );
     expect(screen.getByTestId("ResponsiveContainer")).toBeInTheDocument();
   });
 
-  it("renders humidity axis when showHumidity is true", () => {
+  it("renders a single YAxis in temperature mode", () => {
     const { container } = render(
       <ClimateChart
         series={[makeSeries()]}
         deviceActions={noActions}
-        showHumidity={true}
+        mode="temperature"
         selectedDeviceIds={[]}
       />,
     );
-    // Two YAxis elements expected: one for temp (always) and one for humidity
     const axes = container.querySelectorAll('[data-testid="YAxis"]');
-    expect(axes.length).toBe(2);
+    expect(axes.length).toBe(1);
   });
 
-  it("does not render humidity axis when showHumidity is false", () => {
+  it("renders a single YAxis in humidity mode", () => {
     const { container } = render(
       <ClimateChart
         series={[makeSeries()]}
         deviceActions={noActions}
-        showHumidity={false}
+        mode="humidity"
         selectedDeviceIds={[]}
       />,
     );

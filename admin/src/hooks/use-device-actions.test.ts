@@ -16,12 +16,16 @@ const defaultOpts = {
 describe("useDeviceActions", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("returns empty events when roomIds is empty", () => {
+  it("fetches all rooms when roomIds is empty (no room filter applied)", async () => {
+    mockFetchActions.mockResolvedValue({ events: [] });
     const { result } = renderHook(() =>
       useDeviceActions({ ...defaultOpts, roomIds: [] }),
     );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(mockFetchActions).toHaveBeenCalledWith(
+      expect.objectContaining({ roomIds: undefined }),
+    );
     expect(result.current.events).toEqual([]);
-    expect(result.current.loading).toBe(false);
   });
 
   it("fetches action events and returns them", async () => {

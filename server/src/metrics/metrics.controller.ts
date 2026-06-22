@@ -44,7 +44,7 @@ const ActionsQueryZod = z.object({
     .transform((v) => (v ? new Date(v) : undefined)),
 });
 
-@Controller("api/metrics")
+@Controller("/api/metrics")
 @UseGuards(AuthGuard)
 export class MetricsController {
   constructor(

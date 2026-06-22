@@ -1,91 +1,54 @@
 import { useCallback, useEffect, useState } from "react";
 
-const DEFAULT_SCOPE = ["openid", "email", "profile"];
-const GOOGLE_AUTH_V2_URL = "https://accounts.google.com/o/oauth2/v2";
-
 export type AuthState =
-  | "LoggedOut"
-  | "LoggingIn"
-  | "NeedsLogIn"
-  | "AuthFullAccess"
-  | "AuthRestricted";
-
-function buildGoogleAuthUrl(
-  clientId: string,
-  redirectUri: string,
-  scope: string[] = DEFAULT_SCOPE,
-) {
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    response_type: "code",
-    scope: scope.join(" "),
-    access_type: "offline",
-    prompt: "consent",
-    state: Math.random().toString(36).slice(2),
-  });
-  return `${GOOGLE_AUTH_V2_URL}/auth?${params.toString()}`;
-}
-
-function deleteCookie(name: string, path = "/") {
-  document.cookie = `${name}=; Max-Age=0; path=${path}`;
-}
+  | "Checking"
+  | "Authorized"
+  | "Forbidden";
 
 export type UseAuthReturnType = {
   authState: AuthState;
   logout: () => Promise<void>;
-  startLogin: () => void;
 };
 
 export function useAuth(): UseAuthReturnType {
-  const API_BASE = `${import.meta.env.VITE_API_HOSTNAME}/api/auth`;
-  const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-  const [authState, setAuthState] = useState<AuthState>("LoggedOut");
+  const [authState, setAuthState] = useState<AuthState>("Checking");
 
   useEffect(() => {
-    if (authState !== "LoggedOut") return;
+    if (authState !== "Checking") return;
 
-    fetch(`${API_BASE}/check`, {
+    fetch("/api/auth/check", {
       method: "GET",
       credentials: "include",
       cache: "no-store",
     })
-      .then(async (res) => {
+      .then((res) => {
         if (res.status === 200) {
-          setAuthState("AuthFullAccess");
+          setAuthState("Authorized");
         } else if (res.status === 403) {
-          setAuthState("AuthRestricted");
-        } else if (res.status === 401) {
-          setAuthState("NeedsLogIn");
+          setAuthState("Forbidden");
         } else {
-          setAuthState("AuthRestricted");
+          // 401 → not logged in → send to main app which owns the login flow
+          window.location.href = "/";
         }
       })
       .catch(() => {
-        setAuthState("AuthRestricted");
+        // Network error — treat as unauthenticated
+        window.location.href = "/";
       });
-  }, [authState, API_BASE]);
-
-  const startLogin = useCallback(() => {
-    setAuthState("LoggingIn");
-    const redirectUri = `${API_BASE}/google/callback`;
-    window.location.href = buildGoogleAuthUrl(CLIENT_ID, redirectUri);
-  }, [API_BASE, CLIENT_ID]);
+  }, [authState]);
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${API_BASE}/google/logout`, {
+      await fetch("/api/auth/google/logout", {
         method: "POST",
         credentials: "include",
       });
     } catch {
-      // best-effort logout
+      // best-effort
     } finally {
-      deleteCookie("Session");
-      setAuthState("LoggedOut");
+      window.location.href = "/";
     }
-  }, [API_BASE]);
+  }, []);
 
-  return { authState, logout, startLogin };
+  return { authState, logout };
 }

@@ -16,8 +16,8 @@ export function useRooms(): UseRoomsResult {
   useEffect(() => {
     setLoading(true);
     fetchHomeState()
-      .then((state: HomeState) => {
-        setRooms(state.rooms ?? []);
+      .then((state: HomeState | null) => {
+        setRooms(state?.rooms ?? []);
         setError(null);
       })
       .catch((err: Error) => {

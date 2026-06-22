@@ -17,12 +17,16 @@ const defaultOpts = {
 describe("useClimateMetrics", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("returns empty series and loading=false when roomIds is empty", async () => {
+  it("fetches all rooms when roomIds is empty (no room filter applied)", async () => {
+    mockFetchClimate.mockResolvedValue({ series: [] });
     const { result } = renderHook(() =>
       useClimateMetrics({ ...defaultOpts, roomIds: [] }),
     );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(mockFetchClimate).toHaveBeenCalledWith(
+      expect.objectContaining({ roomIds: undefined }),
+    );
     expect(result.current.series).toEqual([]);
-    expect(result.current.loading).toBe(false);
   });
 
   it("fetches climate data and sets series", async () => {
