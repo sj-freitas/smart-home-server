@@ -195,7 +195,12 @@ describe("StateService.addToState — climate metrics recording", () => {
     const svc = new StateService(sensorConfig, persistence, metrics);
 
     await svc.addToState([
-      { id: "sensor-1", roomId: "living-room", temperature: 22.5, humidity: null },
+      {
+        id: "sensor-1",
+        roomId: "living-room",
+        temperature: 22.5,
+        humidity: null,
+      },
     ] as DeviceState[]);
 
     expect(metrics.recordClimate).toHaveBeenCalledWith(
@@ -212,7 +217,12 @@ describe("StateService.addToState — climate metrics recording", () => {
     const svc = new StateService(sensorConfig, persistence, metrics);
 
     await svc.addToState([
-      { id: "sensor-1", roomId: "living-room", temperature: null, humidity: 60 },
+      {
+        id: "sensor-1",
+        roomId: "living-room",
+        temperature: null,
+        humidity: 60,
+      },
     ] as DeviceState[]);
 
     expect(metrics.recordClimate).toHaveBeenCalledWith(

@@ -27,9 +27,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const [customTo, setCustomTo] = useState(() => toDatetimeLocal(new Date()));
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
-  const [showHumidity, setShowHumidity] = useState(false);
+  const [mode, setMode] = useState<"temperature" | "humidity">("temperature");
 
-  // Auto-select all rooms once they load
+  // Auto-select all rooms from useRooms once they load (preferred source)
   useEffect(() => {
     if (rooms.length > 0 && selectedRoomIds.length === 0) {
       setSelectedRoomIds(rooms.map((r) => r.id));
@@ -59,12 +59,27 @@ export function Dashboard({ onLogout }: DashboardProps) {
     granularity,
   });
 
+  // If useRooms hasn't loaded yet, populate the room selector from the series data
+  // so the dashboard is usable even when /api/home is slow or unavailable.
+  useEffect(() => {
+    if (rooms.length === 0 && series.length > 0 && selectedRoomIds.length === 0) {
+      setSelectedRoomIds(series.map((s) => s.roomId));
+    }
+  }, [series, rooms.length]);
+
   const { events: deviceActions, loading: actionsLoading } = useDeviceActions({
     roomIds: selectedRoomIds,
     deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
     from: timeRange.from,
     to: timeRange.to,
   });
+
+  // Rooms for the selector: prefer the full home-config list; fall back to rooms
+  // that have returned data (so the selector appears even if /api/home is unavailable).
+  const selectorRooms =
+    rooms.length > 0
+      ? rooms
+      : series.map((s) => ({ id: s.roomId, name: s.roomName, devices: [] }));
 
   const allDeviceIds = [...new Set(deviceActions.map((e) => e.deviceId))];
 
@@ -96,26 +111,37 @@ export function Dashboard({ onLogout }: DashboardProps) {
             </button>
           )}
 
-          {roomsLoading ? (
+          {roomsLoading && selectorRooms.length === 0 ? (
             <p style={mutedStyle}>Loading rooms…</p>
           ) : (
             <RoomSelector
-              rooms={rooms}
+              rooms={selectorRooms}
               selectedIds={selectedRoomIds}
               onChange={setSelectedRoomIds}
             />
           )}
 
           <div style={toggleRowStyle}>
-            <label style={checkboxLabelStyle}>
-              <input
-                type="checkbox"
-                checked={showHumidity}
-                onChange={(e) => setShowHumidity(e.target.checked)}
-                style={{ marginRight: 6 }}
-              />
-              Show humidity
-            </label>
+            <div style={tabGroupStyle} role="tablist">
+              <button
+                role="tab"
+                type="button"
+                aria-selected={mode === "temperature"}
+                onClick={() => setMode("temperature")}
+                style={tabButtonStyle(mode === "temperature")}
+              >
+                Temperature
+              </button>
+              <button
+                role="tab"
+                type="button"
+                aria-selected={mode === "humidity"}
+                onClick={() => setMode("humidity")}
+                style={tabButtonStyle(mode === "humidity")}
+              >
+                Humidity
+              </button>
+            </div>
 
             <button type="button" onClick={refetch} style={refetchButtonStyle}>
               ↻ Refresh
@@ -141,7 +167,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
           <ClimateChart
             series={series}
             deviceActions={deviceActions}
-            showHumidity={showHumidity}
+            mode={mode}
             selectedDeviceIds={selectedDeviceIds}
           />
         </section>
@@ -204,13 +230,25 @@ const toggleRowStyle: React.CSSProperties = {
   padding: "4px 0",
 };
 
-const checkboxLabelStyle: React.CSSProperties = {
+const tabGroupStyle: React.CSSProperties = {
   display: "flex",
-  alignItems: "center",
-  color: "#aaa",
-  fontSize: 13,
-  cursor: "pointer",
+  borderRadius: 6,
+  overflow: "hidden",
+  border: "1px solid #3a3a5a",
 };
+
+function tabButtonStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: "5px 18px",
+    border: "none",
+    background: active ? "#2a2a5e" : "transparent",
+    color: active ? "#fff" : "#888",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: active ? 600 : 400,
+    transition: "background 0.15s, color 0.15s",
+  };
+}
 
 const mutedStyle: React.CSSProperties = {
   color: "#666",

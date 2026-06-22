@@ -121,7 +121,8 @@ describe("MetricsPersistenceService", () => {
       };
       await svc.queryClimate(opts);
 
-      const calledParams = (pool.query as jest.Mock).mock.calls[0][1] as unknown[];
+      const calledParams = (pool.query as jest.Mock).mock
+        .calls[0][1] as unknown[];
       expect(calledParams).toContainEqual(["living-room", "bedroom"]);
     });
 
@@ -133,7 +134,8 @@ describe("MetricsPersistenceService", () => {
       const to = new Date("2024-01-31T23:59:59Z");
       await svc.queryClimate({ from, to });
 
-      const calledParams = (pool.query as jest.Mock).mock.calls[0][1] as unknown[];
+      const calledParams = (pool.query as jest.Mock).mock
+        .calls[0][1] as unknown[];
       expect(calledParams).toContain(from);
       expect(calledParams).toContain(to);
     });
@@ -177,10 +179,13 @@ describe("MetricsPersistenceService", () => {
       const pool = makePool([]);
       const svc = new MetricsPersistenceService(pool);
 
-      const opts: DeviceActionQueryOptions = { deviceIds: ["ac-1", "heater-1"] };
+      const opts: DeviceActionQueryOptions = {
+        deviceIds: ["ac-1", "heater-1"],
+      };
       await svc.queryDeviceActions(opts);
 
-      const calledParams = (pool.query as jest.Mock).mock.calls[0][1] as unknown[];
+      const calledParams = (pool.query as jest.Mock).mock
+        .calls[0][1] as unknown[];
       expect(calledParams).toContainEqual(["ac-1", "heater-1"]);
     });
 

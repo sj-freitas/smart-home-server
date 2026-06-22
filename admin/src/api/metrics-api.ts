@@ -5,12 +5,6 @@ import {
   Granularity,
 } from "../types";
 
-const API_BASE = import.meta.env.VITE_API_HOSTNAME;
-
-function toISOString(date: Date): string {
-  return date.toISOString();
-}
-
 function buildQuery(params: Record<string, string | string[] | undefined>): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(params)) {
@@ -34,12 +28,12 @@ export async function fetchClimateMetrics(opts: {
 }): Promise<ClimateResponse> {
   const qs = buildQuery({
     roomIds: opts.roomIds,
-    from: opts.from ? toISOString(opts.from) : undefined,
-    to: opts.to ? toISOString(opts.to) : undefined,
+    from: opts.from?.toISOString(),
+    to: opts.to?.toISOString(),
     granularity: opts.granularity,
   });
 
-  const res = await fetch(`${API_BASE}/api/metrics/climate${qs}`, {
+  const res = await fetch(`/api/metrics/climate${qs}`, {
     credentials: "include",
   });
 
@@ -59,11 +53,11 @@ export async function fetchDeviceActions(opts: {
   const qs = buildQuery({
     roomIds: opts.roomIds,
     deviceIds: opts.deviceIds,
-    from: opts.from ? toISOString(opts.from) : undefined,
-    to: opts.to ? toISOString(opts.to) : undefined,
+    from: opts.from?.toISOString(),
+    to: opts.to?.toISOString(),
   });
 
-  const res = await fetch(`${API_BASE}/api/metrics/actions${qs}`, {
+  const res = await fetch(`/api/metrics/actions${qs}`, {
     credentials: "include",
   });
 
@@ -74,12 +68,12 @@ export async function fetchDeviceActions(opts: {
   return res.json() as Promise<DeviceActionsResponse>;
 }
 
-export async function fetchHomeState(): Promise<HomeState> {
-  const res = await fetch(`${API_BASE}/api/home`, { credentials: "include" });
+export async function fetchHomeState(): Promise<HomeState | null> {
+  const res = await fetch("/api/home", { credentials: "include" });
 
   if (!res.ok) {
     throw new Error(`Home state fetch failed: ${res.status}`);
   }
 
-  return res.json() as Promise<HomeState>;
+  return res.json() as Promise<HomeState | null>;
 }

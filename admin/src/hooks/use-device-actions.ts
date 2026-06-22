@@ -21,15 +21,13 @@ export function useDeviceActions(opts: {
   const { roomIds, deviceIds, from, to } = opts;
 
   useEffect(() => {
-    if (roomIds.length === 0) {
-      setEvents([]);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
-    fetchDeviceActions({ roomIds, deviceIds, from, to })
+    // Empty roomIds = no filter (fetch all rooms).
+    const activeRoomIds = roomIds.length > 0 ? roomIds : undefined;
+
+    fetchDeviceActions({ roomIds: activeRoomIds, deviceIds, from, to })
       .then((res) => {
         setEvents(res.events);
       })

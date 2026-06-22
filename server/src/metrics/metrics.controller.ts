@@ -14,9 +14,7 @@ const GranularityZod = z
 const StringArrayZod = z
   .union([z.string(), z.array(z.string())])
   .optional()
-  .transform((v) =>
-    v === undefined ? undefined : Array.isArray(v) ? v : [v],
-  );
+  .transform((v) => (v === undefined ? undefined : Array.isArray(v) ? v : [v]));
 
 const ClimateQueryZod = z.object({
   roomIds: StringArrayZod,
@@ -44,7 +42,7 @@ const ActionsQueryZod = z.object({
     .transform((v) => (v ? new Date(v) : undefined)),
 });
 
-@Controller("api/metrics")
+@Controller("/api/metrics")
 @UseGuards(AuthGuard)
 export class MetricsController {
   constructor(
