@@ -1,4 +1,4 @@
-import { DeviceAction } from "../config/home.zod";
+import { DeviceAction, HomeConfig } from "../config/home.zod";
 import { DeviceHelper } from "../helpers/device-helpers";
 import {
   IntegrationsService,
@@ -8,6 +8,7 @@ import { HomeStateGateway } from "../sockets/home.state.gateway";
 import { ConfigService } from "../config/config-service";
 import { StateService } from "../services/state/state.service";
 import { OnActionsService } from "./on-actions/on-actions-service";
+import { MetricsPersistenceService } from "../metrics/metrics.persistence.service";
 
 export type ActionRunResult =
   | { found: false; message: string }
@@ -15,6 +16,7 @@ export type ActionRunResult =
 
 export class ActionRunnerService {
   private readonly deviceHelper: DeviceHelper;
+  private readonly homeConfig: HomeConfig;
 
   constructor(
     private readonly integrations: IntegrationsService,
@@ -22,8 +24,10 @@ export class ActionRunnerService {
     private readonly homeStateGateway: HomeStateGateway,
     private readonly onActions: OnActionsService,
     configService: ConfigService,
+    private readonly metricsPersistenceService?: MetricsPersistenceService,
   ) {
-    this.deviceHelper = new DeviceHelper(configService.getConfig().home);
+    this.homeConfig = configService.getConfig().home;
+    this.deviceHelper = new DeviceHelper(this.homeConfig);
   }
 
   public async run(
@@ -62,6 +66,16 @@ export class ActionRunnerService {
         this.onActions.handleOnAction(onAction),
       ),
     );
+
+    if (this.metricsPersistenceService) {
+      const room = this.homeConfig.rooms.find((r) => r.id === roomId);
+      const roomName = room?.name ?? roomId;
+      this.metricsPersistenceService
+        .recordDeviceAction(roomId, roomName, deviceId, actionId)
+        .catch((err) => {
+          console.error("Failed to record device action metric", err);
+        });
+    }
 
     return { found: true, actionResult, action };
   }

@@ -4,11 +4,13 @@ import { IntegrationsModule } from "../integrations/module";
 import { ServicesModule } from "../services/module";
 import { SocketsModule } from "../sockets/module";
 import { ActionsModule } from "../actions/module";
+import { MetricsModule } from "../metrics/module";
 import { HomeController } from "./home.controller";
 import { ActionsController } from "./actions.controller";
 import { AuthController } from "./auth.controller";
 import { SandboxController } from "./sandbox.controller";
 import { StaticController } from "./static.controller";
+import { AdminDashboardController } from "./admin-dashboard.controller";
 import { AuthConfig } from "./auth.config";
 import { AuthGoogleController } from "./auth-google/auth-google.controller";
 import { ApiController } from "./api.controller";
@@ -27,6 +29,7 @@ const AuthConfigProvider = {
     ServicesModule,
     SocketsModule,
     ActionsModule,
+    MetricsModule,
   ],
   controllers: [
     ApiController,
@@ -35,8 +38,9 @@ const AuthConfigProvider = {
     AuthController,
     AuthGoogleController,
     SandboxController,
-    StaticController,
     AdminController,
+    AdminDashboardController,
+    StaticController,
   ],
 })
 export class ControllersModule {}

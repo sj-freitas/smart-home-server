@@ -1,5 +1,6 @@
 import { StateService } from "./state.service";
 import { StatePersistenceService } from "./state.persistence.service";
+import { MetricsPersistenceService } from "../../metrics/metrics.persistence.service";
 import { HomeConfig } from "../../config/home.zod";
 import { DeviceState, HomeState } from "./types.zod";
 
@@ -29,6 +30,13 @@ function makePersistence(
     getHomeState: jest.fn().mockResolvedValue(existing),
     storeHomeState: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<StatePersistenceService>;
+}
+
+function makeMetrics(): jest.Mocked<MetricsPersistenceService> {
+  return {
+    recordClimate: jest.fn().mockResolvedValue(undefined),
+    recordDeviceAction: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<MetricsPersistenceService>;
 }
 
 describe("StateService.addToState", () => {
@@ -158,5 +166,100 @@ describe("StateService.addToState", () => {
     ] as DeviceState[]);
 
     expect(result.rooms[0].temperature).toBe(22.5);
+  });
+});
+
+describe("StateService.addToState — climate metrics recording", () => {
+  const sensorConfig: HomeConfig = {
+    name: "My Home",
+    rooms: [
+      {
+        id: "living-room",
+        name: "Living Room",
+        devices: [
+          {
+            id: "sensor-1",
+            name: "Sensor",
+            type: "temperature_humidity_sensor",
+            integration: { name: "shelly", id: "x" },
+            actions: [],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("records climate when a device change includes temperature", async () => {
+    const persistence = makePersistence(null);
+    const metrics = makeMetrics();
+    const svc = new StateService(sensorConfig, persistence, metrics);
+
+    await svc.addToState([
+      { id: "sensor-1", roomId: "living-room", temperature: 22.5, humidity: null },
+    ] as DeviceState[]);
+
+    expect(metrics.recordClimate).toHaveBeenCalledWith(
+      "living-room",
+      "Living Room",
+      22.5,
+      null,
+    );
+  });
+
+  it("records climate when a device change includes humidity", async () => {
+    const persistence = makePersistence(null);
+    const metrics = makeMetrics();
+    const svc = new StateService(sensorConfig, persistence, metrics);
+
+    await svc.addToState([
+      { id: "sensor-1", roomId: "living-room", temperature: null, humidity: 60 },
+    ] as DeviceState[]);
+
+    expect(metrics.recordClimate).toHaveBeenCalledWith(
+      "living-room",
+      "Living Room",
+      null,
+      60,
+    );
+  });
+
+  it("does not record climate when changes have no temperature or humidity", async () => {
+    const persistence = makePersistence(null);
+    const metrics = makeMetrics();
+    const svc = new StateService(sensorConfig, persistence, metrics);
+
+    await svc.addToState([
+      { id: "sensor-1", roomId: "living-room", state: "on" },
+    ] as DeviceState[]);
+
+    expect(metrics.recordClimate).not.toHaveBeenCalled();
+  });
+
+  it("does not attempt to record metrics when no MetricsPersistenceService is provided", async () => {
+    const persistence = makePersistence(null);
+    const svc = new StateService(sensorConfig, persistence);
+
+    await expect(
+      svc.addToState([
+        { id: "sensor-1", roomId: "living-room", temperature: 22.5 },
+      ] as DeviceState[]),
+    ).resolves.not.toThrow();
+  });
+
+  it("uses the roomId as fallback room name when roomId is not in config", async () => {
+    const persistence = makePersistence(null);
+    const metrics = makeMetrics();
+    const svc = new StateService(sensorConfig, persistence, metrics);
+
+    await svc.addToState([
+      { id: "sensor-1", roomId: "unknown-room", temperature: 18.0 },
+    ] as DeviceState[]);
+
+    expect(metrics.recordClimate).toHaveBeenCalledWith(
+      "unknown-room",
+      "unknown-room",
+      18.0,
+      null,
+    );
   });
 });

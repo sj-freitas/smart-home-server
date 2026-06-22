@@ -1,6 +1,7 @@
 import { StatePersistenceService } from "./state.persistence.service";
 import { DeviceState, HomeState } from "./types.zod";
 import { HomeConfig } from "../../config/home.zod";
+import { MetricsPersistenceService } from "../../metrics/metrics.persistence.service";
 
 type RoomDevices = HomeState["rooms"][number]["devices"];
 
@@ -139,10 +140,15 @@ export interface TupleKeyDeviceState {
 }
 
 export class StateService {
+  private readonly roomNameById: ReadonlyMap<string, string>;
+
   constructor(
     private readonly homeConfig: HomeConfig,
     private readonly statePersistenceService: StatePersistenceService,
-  ) {}
+    private readonly metricsPersistenceService?: MetricsPersistenceService,
+  ) {
+    this.roomNameById = new Map(homeConfig.rooms.map((r) => [r.id, r.name]));
+  }
 
   public async addToState(currentChanges: DeviceState[]): Promise<HomeState> {
     const currState = await this.statePersistenceService.getHomeState(
@@ -152,6 +158,30 @@ export class StateService {
 
     await this.statePersistenceService.storeHomeState(newState);
 
+    if (this.metricsPersistenceService) {
+      await this.recordClimateMetrics(currentChanges);
+    }
+
     return newState;
+  }
+
+  private async recordClimateMetrics(changes: DeviceState[]): Promise<void> {
+    const climateChanges = changes.filter(
+      (c) => c.temperature != null || c.humidity != null,
+    );
+
+    await Promise.all(
+      climateChanges.map((change) => {
+        const roomName = this.roomNameById.get(change.roomId) ?? change.roomId;
+        return this.metricsPersistenceService!.recordClimate(
+          change.roomId,
+          roomName,
+          change.temperature ?? null,
+          change.humidity ?? null,
+        ).catch((err) => {
+          console.error("Failed to record climate metric", err);
+        });
+      }),
+    );
   }
 }

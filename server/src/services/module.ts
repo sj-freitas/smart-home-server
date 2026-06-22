@@ -17,6 +17,7 @@ import { SessionsPersistenceService } from "./auth/sessions.persistence.service"
 import { GoogleAuthConfig } from "./auth/google-auth";
 import { StatePersistenceService } from "./state/state.persistence.service";
 import { StateService } from "./state/state.service";
+import { MetricsPersistenceService } from "../metrics/metrics.persistence.service";
 import { OAuthClientsPersistenceService } from "./auth/oauth-clients.persistence.service";
 import { OAuthPendingAuthorizationsPersistenceService } from "./auth/oauth-pending-authorizations.persistence.service";
 import { OAuthCodesPersistenceService } from "./auth/oauth-codes.persistence.service";
@@ -167,11 +168,20 @@ const StatePersistenceServiceProvider = {
   useFactory: (pool: Pool) => new StatePersistenceService(pool),
 };
 
+const MetricsPersistenceServiceProvider = {
+  provide: MetricsPersistenceService,
+  inject: [Pool],
+  useFactory: (pool: Pool) => new MetricsPersistenceService(pool),
+};
+
 const StateServiceProvider = {
   provide: StateService,
-  inject: [StatePersistenceService, ConfigService],
-  useFactory: (service: StatePersistenceService, config: ConfigService) =>
-    new StateService(config.getConfig().home, service),
+  inject: [StatePersistenceService, ConfigService, MetricsPersistenceService],
+  useFactory: (
+    service: StatePersistenceService,
+    config: ConfigService,
+    metrics: MetricsPersistenceService,
+  ) => new StateService(config.getConfig().home, service, metrics),
 };
 
 const OAuthClientsPersistenceServiceProvider = {
@@ -247,6 +257,7 @@ const McpOAuthProviderServiceProvider = {
     HomeConfigProvider,
     PgPoolProvider,
     StatePersistenceServiceProvider,
+    MetricsPersistenceServiceProvider,
     StateServiceProvider,
     OAuthClientsPersistenceServiceProvider,
     OAuthPendingAuthorizationsPersistenceServiceProvider,
@@ -269,6 +280,7 @@ const McpOAuthProviderServiceProvider = {
     HomeConfigProvider,
     PgPoolProvider,
     StatePersistenceServiceProvider,
+    MetricsPersistenceServiceProvider,
     StateServiceProvider,
     OAuthClientsPersistenceServiceProvider,
     OAuthPendingAuthorizationsPersistenceServiceProvider,

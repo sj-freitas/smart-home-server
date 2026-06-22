@@ -10,6 +10,7 @@ import { HomeStateGateway } from "../sockets/home.state.gateway";
 import { ActionRunnerService } from "./action-runner.service";
 import { OnActionsService } from "./on-actions/on-actions-service";
 import { OnActionsModule } from "./on-actions/module";
+import { MetricsPersistenceService } from "../metrics/metrics.persistence.service";
 
 const ActionRunnerServiceProvider = {
   provide: ActionRunnerService,
@@ -19,6 +20,7 @@ const ActionRunnerServiceProvider = {
     HomeStateGateway,
     OnActionsService,
     ConfigService,
+    MetricsPersistenceService,
   ],
   useFactory: (
     integrations: IntegrationsService,
@@ -26,6 +28,7 @@ const ActionRunnerServiceProvider = {
     homeStateGateway: HomeStateGateway,
     onActions: OnActionsService,
     configService: ConfigService,
+    metricsPersistenceService: MetricsPersistenceService,
   ) =>
     new ActionRunnerService(
       integrations,
@@ -33,6 +36,7 @@ const ActionRunnerServiceProvider = {
       homeStateGateway,
       onActions,
       configService,
+      metricsPersistenceService,
     ),
 };
 

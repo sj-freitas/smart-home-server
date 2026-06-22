@@ -22,6 +22,27 @@ RUN printf '%s\n' \
   && npm run build \
   && rm -f .env.production
 
+# ---- admin-builder ----
+FROM node:18 AS admin-builder
+
+WORKDIR /admin
+
+ARG VITE_API_HOSTNAME
+ARG VITE_GOOGLE_CLIENT_ID
+
+COPY admin/package.json admin/package-lock.json* ./
+
+RUN npm ci --no-progress
+
+COPY admin/ .
+
+RUN printf '%s\n' \
+  "VITE_API_HOSTNAME=${VITE_API_HOSTNAME:-}" \
+  "VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-}" \
+  > .env.production \
+  && npm run build \
+  && rm -f .env.production
+
 # ---- server-builder ----
 FROM timbru31/node-chrome:latest AS server-builder
 
@@ -41,6 +62,9 @@ COPY server/ .
 # copy the built client (from client-builder) into the server build context
 # we'll expose these static assets at runtime from /app/public
 COPY --from=client-builder /client/dist ./public
+
+# copy the built admin dashboard
+COPY --from=admin-builder /admin/dist ./admin
 
 # copy other static/config if you keep them in server/
 # (optional; keep if you use /server/static or /server/config.json)
@@ -68,6 +92,7 @@ COPY --from=server-builder /app/package-lock.json ./package-lock.json
 
 # copy static/public (client build) and other static assets
 COPY --from=server-builder /app/public ./public
+COPY --from=server-builder /app/admin ./admin
 COPY --from=server-builder /app/static ./static
 COPY --from=server-builder /app/config.json ./config.json
 

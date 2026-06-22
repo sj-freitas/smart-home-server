@@ -4,6 +4,7 @@ import { StateService } from "../services/state/state.service";
 import { HomeStateGateway } from "../sockets/home.state.gateway";
 import { OnActionsService } from "./on-actions/on-actions-service";
 import { ConfigService } from "../config/config-service";
+import { MetricsPersistenceService } from "../metrics/metrics.persistence.service";
 import { HomeConfig } from "../config/home.zod";
 import { HomeState } from "../services/state/types.zod";
 
@@ -16,7 +17,10 @@ const stubHomeState: HomeState = {
   rooms: [],
 };
 
-function makeRunner(homeConfig: HomeConfig) {
+function makeRunner(
+  homeConfig: HomeConfig,
+  metricsPersistenceService?: MetricsPersistenceService,
+) {
   const mockIntegrationService = {
     name: "shelly" as const,
     tryRunAction: jest.fn().mockResolvedValue(true),
@@ -50,6 +54,7 @@ function makeRunner(homeConfig: HomeConfig) {
     gateway,
     onActions,
     configService,
+    metricsPersistenceService,
   );
   return {
     runner,
@@ -59,6 +64,13 @@ function makeRunner(homeConfig: HomeConfig) {
     onActions,
     mockIntegrationService,
   };
+}
+
+function makeMetrics(): jest.Mocked<MetricsPersistenceService> {
+  return {
+    recordClimate: jest.fn().mockResolvedValue(undefined),
+    recordDeviceAction: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<MetricsPersistenceService>;
 }
 
 const baseConfig: HomeConfig = {
@@ -119,6 +131,27 @@ describe("ActionRunnerService.run", () => {
     Object.assign(gateway, { isInitialized: true });
     await runner.run("living-room", "light-1", "turn-on");
     expect(gateway.updateState).toHaveBeenCalledWith(stubHomeState);
+  });
+
+  it("records the device action metric when MetricsPersistenceService is provided", async () => {
+    const metrics = makeMetrics();
+    const { runner } = makeRunner(baseConfig, metrics);
+
+    await runner.run("living-room", "light-1", "turn-on");
+
+    expect(metrics.recordDeviceAction).toHaveBeenCalledWith(
+      "living-room",
+      "Living Room",
+      "light-1",
+      "turn-on",
+    );
+  });
+
+  it("does not throw when MetricsPersistenceService is not provided", async () => {
+    const { runner } = makeRunner(baseConfig);
+    await expect(
+      runner.run("living-room", "light-1", "turn-on"),
+    ).resolves.not.toThrow();
   });
 
   it("invokes onAction handlers for each onAction defined on the action", async () => {
