@@ -176,6 +176,10 @@ describe("StateService.addToState — climate metrics recording", () => {
       {
         id: "living-room",
         name: "Living Room",
+        roomInfo: {
+          temperatureDeviceId: "living-room/sensor-1",
+          humidityDeviceId: "living-room/sensor-1",
+        },
         devices: [
           {
             id: "sensor-1",
@@ -256,20 +260,76 @@ describe("StateService.addToState — climate metrics recording", () => {
     ).resolves.not.toThrow();
   });
 
-  it("uses the roomId as fallback room name when roomId is not in config", async () => {
+  it("does not record climate for a device not referenced in any roomInfo", async () => {
     const persistence = makePersistence(null);
     const metrics = makeMetrics();
     const svc = new StateService(sensorConfig, persistence, metrics);
 
     await svc.addToState([
-      { id: "sensor-1", roomId: "unknown-room", temperature: 18.0 },
+      { id: "ac", roomId: "living-room", temperature: 22.5 },
     ] as DeviceState[]);
 
+    expect(metrics.recordClimate).not.toHaveBeenCalled();
+  });
+
+  it("records climate for multiple rooms that share the same sensor", async () => {
+    const sharedSensorConfig: HomeConfig = {
+      name: "My Home",
+      rooms: [
+        {
+          id: "living-room",
+          name: "Living Room",
+          roomInfo: {
+            temperatureDeviceId: "living-room/sensor-1",
+            humidityDeviceId: "living-room/sensor-1",
+          },
+          devices: [
+            {
+              id: "sensor-1",
+              name: "Sensor",
+              type: "temperature_humidity_sensor",
+              integration: { name: "shelly", id: "x" },
+              actions: [],
+            },
+          ],
+        },
+        {
+          id: "kitchen",
+          name: "Kitchen",
+          roomInfo: {
+            temperatureDeviceId: "living-room/sensor-1",
+            humidityDeviceId: "living-room/sensor-1",
+          },
+          devices: [],
+        },
+      ],
+    };
+
+    const persistence = makePersistence(null);
+    const metrics = makeMetrics();
+    const svc = new StateService(sharedSensorConfig, persistence, metrics);
+
+    await svc.addToState([
+      {
+        id: "sensor-1",
+        roomId: "living-room",
+        temperature: 21.0,
+        humidity: 55,
+      },
+    ] as DeviceState[]);
+
+    expect(metrics.recordClimate).toHaveBeenCalledTimes(2);
     expect(metrics.recordClimate).toHaveBeenCalledWith(
-      "unknown-room",
-      "unknown-room",
-      18.0,
-      null,
+      "living-room",
+      "Living Room",
+      21.0,
+      55,
+    );
+    expect(metrics.recordClimate).toHaveBeenCalledWith(
+      "kitchen",
+      "Kitchen",
+      21.0,
+      55,
     );
   });
 });

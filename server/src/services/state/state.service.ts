@@ -166,22 +166,38 @@ export class StateService {
   }
 
   private async recordClimateMetrics(changes: DeviceState[]): Promise<void> {
-    const climateChanges = changes.filter(
-      (c) => c.temperature != null || c.humidity != null,
+    const deviceStateByPath = new Map(
+      changes.map((c) => [`${c.roomId}/${c.id}`, c]),
     );
 
+    const roomMetrics = this.homeConfig.rooms
+      .map((room) => {
+        const { temperatureDeviceId, humidityDeviceId } = room.roomInfo ?? {};
+        const temperature =
+          temperatureDeviceId != null
+            ? (deviceStateByPath.get(temperatureDeviceId)?.temperature ?? null)
+            : null;
+        const humidity =
+          humidityDeviceId != null
+            ? (deviceStateByPath.get(humidityDeviceId)?.humidity ?? null)
+            : null;
+
+        if (temperature === null && humidity === null) return null;
+        return { roomId: room.id, roomName: room.name, temperature, humidity };
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null);
+
     await Promise.all(
-      climateChanges.map((change) => {
-        const roomName = this.roomNameById.get(change.roomId) ?? change.roomId;
-        return this.metricsPersistenceService!.recordClimate(
-          change.roomId,
+      roomMetrics.map(({ roomId, roomName, temperature, humidity }) =>
+        this.metricsPersistenceService!.recordClimate(
+          roomId,
           roomName,
-          change.temperature ?? null,
-          change.humidity ?? null,
+          temperature,
+          humidity,
         ).catch((err) => {
           console.error("Failed to record climate metric", err);
-        });
-      }),
+        }),
+      ),
     );
   }
 }

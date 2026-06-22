@@ -89,8 +89,10 @@ function CustomTooltip({
   payload,
   label,
   deviceEvents,
+  actionColorMap,
 }: TooltipProps<number, string> & {
   deviceEvents: Map<number, DeviceActionEvent[]>;
+  actionColorMap: Map<string, string>;
 }) {
   if (!active || !payload?.length) return null;
 
@@ -106,7 +108,7 @@ function CustomTooltip({
         </p>
       ))}
       {events.map((e, i) => (
-        <p key={i} style={{ margin: "2px 0", color: "#888", fontSize: 11 }}>
+        <p key={i} style={{ margin: "2px 0", color: actionColorMap.get(e.actionId) ?? "#888", fontSize: 11 }}>
           ⚡ {e.deviceId}: {e.actionId}
         </p>
       ))}
@@ -157,9 +159,9 @@ export function ClimateChart({
     return m;
   }, [visibleActions]);
 
-  const deviceColorMap = useMemo(() => {
-    const allDeviceIds = [...new Set(deviceActions.map((e) => e.deviceId))];
-    return new Map(allDeviceIds.map((id, i) => [id, DEVICE_COLORS[i % DEVICE_COLORS.length]]));
+  const actionColorMap = useMemo(() => {
+    const allActionIds = [...new Set(deviceActions.map((e) => e.actionId))];
+    return new Map(allActionIds.map((id, i) => [id, DEVICE_COLORS[i % DEVICE_COLORS.length]]));
   }, [deviceActions]);
 
   if (data.length === 0) {
@@ -198,7 +200,7 @@ export function ClimateChart({
         />
 
         <Tooltip
-          content={<CustomTooltip deviceEvents={deviceEventsByTs} />}
+          content={<CustomTooltip deviceEvents={deviceEventsByTs} actionColorMap={actionColorMap} />}
           labelFormatter={formatTimestamp}
         />
         <Legend wrapperStyle={{ color: "#ccc", fontSize: 12 }} />
@@ -238,7 +240,7 @@ export function ClimateChart({
             key={`action-${i}`}
             yAxisId="main"
             x={new Date(e.recordedAt).getTime()}
-            stroke={deviceColorMap.get(e.deviceId) ?? "#888"}
+            stroke={actionColorMap.get(e.actionId) ?? "#888"}
             strokeDasharray="3 3"
             strokeWidth={1}
             strokeOpacity={0.6}
