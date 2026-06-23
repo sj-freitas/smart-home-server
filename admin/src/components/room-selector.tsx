@@ -7,7 +7,11 @@ interface RoomSelectorProps {
   onChange: (ids: string[]) => void;
 }
 
-export function RoomSelector({ rooms, selectedIds, onChange }: RoomSelectorProps) {
+export function RoomSelector({
+  rooms,
+  selectedIds,
+  onChange,
+}: RoomSelectorProps) {
   function toggle(id: string) {
     if (selectedIds.includes(id)) {
       onChange(selectedIds.filter((r) => r !== id));

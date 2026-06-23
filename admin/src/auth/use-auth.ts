@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-export type AuthState =
-  | "Checking"
-  | "Authorized"
-  | "Forbidden";
+export type AuthState = "Checking" | "Authorized" | "Forbidden";
 
 export type UseAuthReturnType = {
   authState: AuthState;

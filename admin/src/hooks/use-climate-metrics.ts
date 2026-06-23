@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ClimateSeries, Granularity } from "../types";
 import { fetchClimateMetrics } from "../api/metrics-api";
 
@@ -17,7 +17,9 @@ export interface ClimateMetricsOpts {
   granularity: Granularity;
 }
 
-export function useClimateMetrics(opts: ClimateMetricsOpts): UseClimateMetricsResult {
+export function useClimateMetrics(
+  opts: ClimateMetricsOpts,
+): UseClimateMetricsResult {
   const [series, setSeries] = useState<ClimateSeries[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,10 +40,7 @@ export function useClimateMetrics(opts: ClimateMetricsOpts): UseClimateMetricsRe
       .finally(() => setLoading(false));
   }, [roomIds.join(","), from.getTime(), to.getTime(), granularity, tick]);
 
-  return {
-    series,
-    loading,
-    error,
-    refetch: () => setTick((t) => t + 1),
-  };
+  const refetch = useCallback(() => setTick((t) => t + 1), []);
+
+  return { series, loading, error, refetch };
 }

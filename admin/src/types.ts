@@ -26,10 +26,15 @@ export interface DeviceActionsResponse {
   events: DeviceActionEvent[];
 }
 
+export interface DeviceAction {
+  id: string;
+  name: string;
+}
+
 export interface RoomState {
   id: string;
   name: string;
-  devices: { id: string; name: string }[];
+  devices: { id: string; name: string; actions: DeviceAction[] }[];
 }
 
 export interface HomeState {
@@ -37,13 +42,7 @@ export interface HomeState {
   rooms: RoomState[];
 }
 
-export type Granularity =
-  | "raw"
-  | "minute"
-  | "hour"
-  | "day"
-  | "week"
-  | "month";
+export type Granularity = "raw" | "minute" | "hour" | "day" | "week" | "month";
 
 export interface TimeRange {
   from: Date;

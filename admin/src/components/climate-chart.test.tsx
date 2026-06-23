@@ -48,6 +48,7 @@ describe("ClimateChart", () => {
         deviceActions={noActions}
         mode="temperature"
         selectedDeviceIds={[]}
+        rooms={[]}
       />,
     );
     expect(
@@ -62,6 +63,7 @@ describe("ClimateChart", () => {
         deviceActions={noActions}
         mode="temperature"
         selectedDeviceIds={[]}
+        rooms={[]}
       />,
     );
     expect(screen.getByTestId("ResponsiveContainer")).toBeInTheDocument();
@@ -74,6 +76,7 @@ describe("ClimateChart", () => {
         deviceActions={noActions}
         mode="temperature"
         selectedDeviceIds={[]}
+        rooms={[]}
       />,
     );
     const axes = container.querySelectorAll('[data-testid="YAxis"]');
@@ -87,6 +90,7 @@ describe("ClimateChart", () => {
         deviceActions={noActions}
         mode="humidity"
         selectedDeviceIds={[]}
+        rooms={[]}
       />,
     );
     const axes = container.querySelectorAll('[data-testid="YAxis"]');

@@ -1,7 +1,11 @@
 import React from "react";
 import { TimePreset, Granularity } from "../types";
 
-const PRESETS: { label: string; value: TimePreset; granularity: Granularity }[] = [
+const PRESETS: {
+  label: string;
+  value: TimePreset;
+  granularity: Granularity;
+}[] = [
   { label: "1h", value: "1h", granularity: "minute" },
   { label: "6h", value: "6h", granularity: "minute" },
   { label: "24h", value: "24h", granularity: "hour" },

@@ -9,12 +9,10 @@ import {
   Legend,
   ResponsiveContainer,
   Brush,
-  ReferenceLine,
   TooltipProps,
 } from "recharts";
-import { ClimateSeries, DeviceActionEvent } from "../types";
+import { ClimateSeries, DeviceActionEvent, RoomState } from "../types";
 
-// Colour palettes — room temperatures use warm tones, humidity uses cool dashes
 const ROOM_COLORS = [
   "#e05c5c",
   "#e09c3c",
@@ -62,56 +60,63 @@ function mergeSeriesIntoTimeline(series: ClimateSeries[]): MergedDataPoint[] {
   for (const room of series) {
     for (const point of room.data) {
       const ts = new Date(point.timestamp).getTime();
-      if (!byTs.has(ts)) {
-        byTs.set(ts, { ts });
-      }
+      if (!byTs.has(ts)) byTs.set(ts, { ts });
       const row = byTs.get(ts)!;
-      if (point.temperature !== null) {
+      if (point.temperature !== null)
         row[`${room.roomId}_temp`] = point.temperature;
-      }
-      if (point.humidity !== null) {
-        row[`${room.roomId}_hum`] = point.humidity;
-      }
+      if (point.humidity !== null) row[`${room.roomId}_hum`] = point.humidity;
     }
   }
 
   return Array.from(byTs.values()).sort((a, b) => a.ts - b.ts);
 }
 
+interface StepSeriesData {
+  devicePath: string;
+  dataKey: string;
+  deviceName: string;
+  color: string;
+  events: Array<{ ts: number; y: number }>;
+}
+
 interface CustomTooltipPayloadEntry {
   name: string;
   value: number | null;
   color: string;
+  dataKey?: string;
 }
 
 function CustomTooltip({
   active,
   payload,
   label,
-  deviceEvents,
-  actionColorMap,
+  actionAxisTicks,
 }: TooltipProps<number, string> & {
-  deviceEvents: Map<number, DeviceActionEvent[]>;
-  actionColorMap: Map<string, string>;
+  actionAxisTicks: Map<number, string>;
 }) {
   if (!active || !payload?.length) return null;
 
   const ts = label as number;
-  const events = deviceEvents.get(ts) ?? [];
 
   return (
     <div style={tooltipStyle}>
-      <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{formatTimestamp(ts)}</p>
-      {(payload as CustomTooltipPayloadEntry[]).map((entry) => (
-        <p key={entry.name} style={{ margin: "2px 0", color: entry.color }}>
-          {entry.name}: {entry.value !== null ? entry.value.toFixed(1) : "—"}
-        </p>
-      ))}
-      {events.map((e, i) => (
-        <p key={i} style={{ margin: "2px 0", color: actionColorMap.get(e.actionId) ?? "#888", fontSize: 11 }}>
-          ⚡ {e.deviceId}: {e.actionId}
-        </p>
-      ))}
+      <p style={{ margin: "0 0 4px", fontWeight: 600 }}>
+        {formatTimestamp(ts)}
+      </p>
+      {(payload as CustomTooltipPayloadEntry[]).map((entry) => {
+        const isState = entry.dataKey?.endsWith("_state") ?? false;
+        const displayValue = isState
+          ? (actionAxisTicks.get(Math.round(Number(entry.value))) ??
+            `${entry.value}%`)
+          : entry.value != null
+            ? (entry.value as number).toFixed(1)
+            : "—";
+        return (
+          <p key={entry.name} style={{ margin: "2px 0", color: entry.color }}>
+            {entry.name}: {displayValue}
+          </p>
+        );
+      })}
     </div>
   );
 }
@@ -130,6 +135,7 @@ interface ClimateChartProps {
   deviceActions: DeviceActionEvent[];
   mode: "temperature" | "humidity";
   selectedDeviceIds: string[];
+  rooms: RoomState[];
 }
 
 export function ClimateChart({
@@ -137,6 +143,7 @@ export function ClimateChart({
   deviceActions,
   mode,
   selectedDeviceIds,
+  rooms,
 }: ClimateChartProps) {
   const data = useMemo(() => mergeSeriesIntoTimeline(series), [series]);
 
@@ -148,21 +155,123 @@ export function ClimateChart({
     [deviceActions, selectedDeviceIds],
   );
 
-  // Map timestamp → list of events for fast tooltip lookup
-  const deviceEventsByTs = useMemo(() => {
-    const m = new Map<number, DeviceActionEvent[]>();
-    for (const e of visibleActions) {
-      const ts = new Date(e.recordedAt).getTime();
-      if (!m.has(ts)) m.set(ts, []);
-      m.get(ts)!.push(e);
+  // device config lookup: "roomId/deviceId" → { deviceName, actions }
+  const deviceConfigMap = useMemo(() => {
+    const map = new Map<
+      string,
+      { deviceName: string; actions: { id: string; name: string }[] }
+    >();
+    for (const room of rooms) {
+      for (const device of room.devices) {
+        map.set(`${room.id}/${device.id}`, {
+          deviceName: device.name,
+          actions: device.actions,
+        });
+      }
     }
-    return m;
-  }, [visibleActions]);
+    return map;
+  }, [rooms]);
 
-  const actionColorMap = useMemo(() => {
-    const allActionIds = [...new Set(deviceActions.map((e) => e.actionId))];
-    return new Map(allActionIds.map((id, i) => [id, DEVICE_COLORS[i % DEVICE_COLORS.length]]));
-  }, [deviceActions]);
+  // Per-device step series: sorted event timestamps + normalised Y values
+  const stepSeries = useMemo((): StepSeriesData[] => {
+    if (rooms.length === 0 || visibleActions.length === 0) return [];
+
+    const eventsByDevice = new Map<string, DeviceActionEvent[]>();
+    for (const event of visibleActions) {
+      const path = `${event.roomId}/${event.deviceId}`;
+      if (!eventsByDevice.has(path)) eventsByDevice.set(path, []);
+      eventsByDevice.get(path)!.push(event);
+    }
+
+    const result: StepSeriesData[] = [];
+    let colorIdx = 0;
+
+    for (const [devicePath, events] of eventsByDevice) {
+      const config = deviceConfigMap.get(devicePath);
+      if (!config || config.actions.length === 0) continue;
+
+      const { actions } = config;
+      const sorted = [...events].sort(
+        (a, b) =>
+          new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime(),
+      );
+
+      // "off" action is always pinned to Y=0 (bottom); remaining actions fill up evenly
+      const orderedActions = [
+        ...actions.filter((a) => a.id === "off"),
+        ...actions.filter((a) => a.id !== "off"),
+      ];
+
+      const stepEvents = sorted
+        .map((event) => {
+          const idx = orderedActions.findIndex((a) => a.id === event.actionId);
+          if (idx < 0) return null;
+          const y =
+            orderedActions.length === 1
+              ? 50
+              : Math.round((idx / (orderedActions.length - 1)) * 100);
+          return { ts: new Date(event.recordedAt).getTime(), y };
+        })
+        .filter((d): d is { ts: number; y: number } => d !== null);
+
+      if (stepEvents.length > 0) {
+        result.push({
+          devicePath,
+          dataKey: `${devicePath.replace("/", "__")}_state`,
+          deviceName: config.deviceName,
+          color: DEVICE_COLORS[colorIdx++ % DEVICE_COLORS.length],
+          events: stepEvents,
+        });
+      }
+    }
+
+    return result;
+  }, [visibleActions, deviceConfigMap, rooms.length]);
+
+  // Extend climate data points with carry-forward device state values
+  const extendedData = useMemo((): MergedDataPoint[] => {
+    if (stepSeries.length === 0) return data;
+    return data.map((point) => {
+      const ext: MergedDataPoint = { ...point };
+      for (const { dataKey, events: stepEvents } of stepSeries) {
+        const last = stepEvents.findLast((e) => e.ts <= point.ts);
+        ext[dataKey] = last?.y ?? null;
+      }
+      return ext;
+    });
+  }, [data, stepSeries]);
+
+  // Y-axis ticks for device action labels (rounded Y → label)
+  // Uses the same "off pinned to 0" ordering as stepSeries computation
+  const actionAxisTicks = useMemo(() => {
+    const tickMap = new Map<number, string>();
+    for (const { devicePath } of stepSeries) {
+      const config = deviceConfigMap.get(devicePath);
+      if (!config) continue;
+      const orderedActions = [
+        ...config.actions.filter((a) => a.id === "off"),
+        ...config.actions.filter((a) => a.id !== "off"),
+      ];
+      orderedActions.forEach((action, idx) => {
+        const y =
+          orderedActions.length === 1
+            ? 50
+            : Math.round((idx / (orderedActions.length - 1)) * 100);
+        const existing = tickMap.get(y);
+        if (!existing) {
+          tickMap.set(y, action.name);
+        } else if (!existing.split("/").includes(action.name)) {
+          tickMap.set(y, `${existing}/${action.name}`);
+        }
+      });
+    }
+    return tickMap;
+  }, [stepSeries, deviceConfigMap]);
+
+  const sortedActionTicks = useMemo(
+    () => [...actionAxisTicks.keys()].sort((a, b) => a - b),
+    [actionAxisTicks],
+  );
 
   if (data.length === 0) {
     return (
@@ -172,9 +281,14 @@ export function ClimateChart({
     );
   }
 
+  const hasSteps = stepSeries.length > 0;
+
   return (
     <ResponsiveContainer width="100%" height={420}>
-      <ComposedChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+      <ComposedChart
+        data={extendedData}
+        margin={{ top: 10, right: hasSteps ? 90 : 30, left: 0, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
         <XAxis
           dataKey="ts"
@@ -198,14 +312,27 @@ export function ClimateChart({
             fontSize: 12,
           }}
         />
+        {hasSteps && (
+          <YAxis
+            yAxisId="actions"
+            orientation="right"
+            domain={[0, 100]}
+            ticks={sortedActionTicks}
+            tickFormatter={(v) =>
+              actionAxisTicks.get(Math.round(Number(v))) ?? ""
+            }
+            tick={{ fontSize: 10, fill: "#888" }}
+            width={75}
+          />
+        )}
 
         <Tooltip
-          content={<CustomTooltip deviceEvents={deviceEventsByTs} actionColorMap={actionColorMap} />}
+          content={<CustomTooltip actionAxisTicks={actionAxisTicks} />}
           labelFormatter={formatTimestamp}
         />
         <Legend wrapperStyle={{ color: "#ccc", fontSize: 12 }} />
 
-        {/* Lines for the active mode */}
+        {/* Climate lines */}
         {series.map((room, i) =>
           mode === "temperature" ? (
             <Line
@@ -217,7 +344,7 @@ export function ClimateChart({
               stroke={ROOM_COLORS[i % ROOM_COLORS.length]}
               dot={false}
               strokeWidth={2}
-              connectNulls={false}
+              connectNulls={true}
             />
           ) : (
             <Line
@@ -229,21 +356,24 @@ export function ClimateChart({
               stroke={ROOM_COLORS[i % ROOM_COLORS.length]}
               dot={false}
               strokeWidth={2}
-              connectNulls={false}
+              connectNulls={true}
             />
           ),
         )}
 
-        {/* Device action reference lines */}
-        {visibleActions.map((e, i) => (
-          <ReferenceLine
-            key={`action-${i}`}
-            yAxisId="main"
-            x={new Date(e.recordedAt).getTime()}
-            stroke={actionColorMap.get(e.actionId) ?? "#888"}
-            strokeDasharray="3 3"
-            strokeWidth={1}
-            strokeOpacity={0.6}
+        {/* Device state step lines */}
+        {stepSeries.map(({ devicePath, dataKey, deviceName, color }) => (
+          <Line
+            key={`step-${devicePath}`}
+            yAxisId="actions"
+            type="stepAfter"
+            dataKey={dataKey}
+            name={`${deviceName} (state)`}
+            stroke={color}
+            strokeWidth={1.5}
+            dot={{ r: 3, fill: color }}
+            isAnimationActive={false}
+            connectNulls={false}
           />
         ))}
 

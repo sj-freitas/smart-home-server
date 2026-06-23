@@ -1,12 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ClimateChart } from "./climate-chart";
-import { TimeRangeSelector, presetToRange, defaultGranularityForPreset } from "./time-range-selector";
+import {
+  TimeRangeSelector,
+  presetToRange,
+  defaultGranularityForPreset,
+} from "./time-range-selector";
 import { RoomSelector } from "./room-selector";
 import { DeviceFilter } from "./device-filter";
 import { useRooms } from "../hooks/use-rooms";
 import { useClimateMetrics } from "../hooks/use-climate-metrics";
 import { useDeviceActions } from "../hooks/use-device-actions";
+import {
+  readDashboardCookie,
+  writeDashboardCookie,
+  savedPreset,
+  savedGranularity,
+  savedMode,
+} from "../hooks/use-dashboard-cookie";
 import { Granularity, TimePreset } from "../types";
+
+const POLL_INTERVAL_MS = 2 * 60 * 1000;
 
 function toDatetimeLocal(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -20,16 +33,50 @@ interface DashboardProps {
 export function Dashboard({ onLogout }: DashboardProps) {
   const { rooms, loading: roomsLoading } = useRooms();
 
-  const [activePreset, setActivePreset] = useState<TimePreset>("24h");
-  const [granularity, setGranularity] = useState<Granularity>("hour");
-  const [timeRange, setTimeRange] = useState(() => presetToRange("24h"));
-  const [customFrom, setCustomFrom] = useState(() => toDatetimeLocal(presetToRange("7d").from));
-  const [customTo, setCustomTo] = useState(() => toDatetimeLocal(new Date()));
+  // Initialise from cookie (lazy initialisers run once on mount)
+  const [activePreset, setActivePreset] = useState<TimePreset>(() => {
+    return savedPreset(readDashboardCookie());
+  });
+  const [granularity, setGranularity] = useState<Granularity>(() => {
+    const saved = readDashboardCookie();
+    const preset = savedPreset(saved);
+    return savedGranularity(saved, defaultGranularityForPreset(preset));
+  });
+  const [timeRange, setTimeRange] = useState(() => {
+    const saved = readDashboardCookie();
+    const preset = savedPreset(saved);
+    if (preset === "custom" && saved.customFrom && saved.customTo) {
+      const from = new Date(saved.customFrom);
+      const to = new Date(saved.customTo);
+      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) return { from, to };
+    }
+    return presetToRange(preset);
+  });
+  const [customFrom, setCustomFrom] = useState(() => {
+    const saved = readDashboardCookie();
+    return saved.customFrom ?? toDatetimeLocal(presetToRange("7d").from);
+  });
+  const [customTo, setCustomTo] = useState(() => {
+    const saved = readDashboardCookie();
+    return saved.customTo ?? toDatetimeLocal(new Date());
+  });
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
-  const [mode, setMode] = useState<"temperature" | "humidity">("temperature");
+  const [mode, setMode] = useState<"temperature" | "humidity">(() => {
+    return savedMode(readDashboardCookie());
+  });
 
-  // Auto-select all rooms from useRooms once they load (preferred source)
+  // Persist settings to cookie whenever they change
+  useEffect(() => {
+    writeDashboardCookie({
+      preset: activePreset,
+      granularity,
+      mode,
+      ...(activePreset === "custom" ? { customFrom, customTo } : {}),
+    });
+  }, [activePreset, granularity, mode, customFrom, customTo]);
+
+  // Auto-select all rooms from useRooms once they load
   useEffect(() => {
     if (rooms.length > 0 && selectedRoomIds.length === 0) {
       setSelectedRoomIds(rooms.map((r) => r.id));
@@ -52,7 +99,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
-  const { series, loading: climateLoading, error: climateError, refetch } = useClimateMetrics({
+  const {
+    series,
+    loading: climateLoading,
+    error: climateError,
+    refetch,
+  } = useClimateMetrics({
     roomIds: selectedRoomIds,
     from: timeRange.from,
     to: timeRange.to,
@@ -60,22 +112,45 @@ export function Dashboard({ onLogout }: DashboardProps) {
   });
 
   // If useRooms hasn't loaded yet, populate the room selector from the series data
-  // so the dashboard is usable even when /api/home is slow or unavailable.
   useEffect(() => {
-    if (rooms.length === 0 && series.length > 0 && selectedRoomIds.length === 0) {
+    if (
+      rooms.length === 0 &&
+      series.length > 0 &&
+      selectedRoomIds.length === 0
+    ) {
       setSelectedRoomIds(series.map((s) => s.roomId));
     }
   }, [series, rooms.length]);
 
-  const { events: deviceActions, loading: actionsLoading } = useDeviceActions({
+  const {
+    events: deviceActions,
+    loading: actionsLoading,
+    refetch: refetchActions,
+  } = useDeviceActions({
     roomIds: selectedRoomIds,
     deviceIds: selectedDeviceIds.length > 0 ? selectedDeviceIds : undefined,
     from: timeRange.from,
     to: timeRange.to,
   });
 
-  // Rooms for the selector: prefer the full home-config list; fall back to rooms
-  // that have returned data (so the selector appears even if /api/home is unavailable).
+  // Polling every 2 minutes — use refs so the interval closure never goes stale
+  const refetchRef = useRef(refetch);
+  const refetchActionsRef = useRef(refetchActions);
+  useEffect(() => {
+    refetchRef.current = refetch;
+  });
+  useEffect(() => {
+    refetchActionsRef.current = refetchActions;
+  });
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      refetchRef.current();
+      refetchActionsRef.current();
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
+
   const selectorRooms =
     rooms.length > 0
       ? rooms
@@ -83,10 +158,17 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
   const allDeviceIds = [...new Set(deviceActions.map((e) => e.deviceId))];
 
+  const handleRefresh = useCallback(() => {
+    refetch();
+    refetchActions();
+  }, [refetch, refetchActions]);
+
   return (
     <div style={pageStyle}>
       <header style={headerStyle}>
-        <h1 style={{ margin: 0, fontSize: 20, color: "#eee" }}>Smart Home Dashboard</h1>
+        <h1 style={{ margin: 0, fontSize: 20, color: "#eee" }}>
+          Smart Home Dashboard
+        </h1>
         <button type="button" onClick={onLogout} style={logoutButtonStyle}>
           Log out
         </button>
@@ -106,7 +188,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
           />
 
           {activePreset === "custom" && (
-            <button type="button" onClick={handleCustomApply} style={applyButtonStyle}>
+            <button
+              type="button"
+              onClick={handleCustomApply}
+              style={applyButtonStyle}
+            >
               Apply
             </button>
           )}
@@ -143,7 +229,11 @@ export function Dashboard({ onLogout }: DashboardProps) {
               </button>
             </div>
 
-            <button type="button" onClick={refetch} style={refetchButtonStyle}>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              style={refetchButtonStyle}
+            >
               ↻ Refresh
             </button>
           </div>
@@ -159,7 +249,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
 
         <section style={chartSectionStyle}>
           {climateError && (
-            <p style={{ color: "#e05c5c", fontSize: 13 }}>Error: {climateError}</p>
+            <p style={{ color: "#e05c5c", fontSize: 13 }}>
+              Error: {climateError}
+            </p>
           )}
           {(climateLoading || actionsLoading) && (
             <p style={mutedStyle}>Loading…</p>
@@ -169,6 +261,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
             deviceActions={deviceActions}
             mode={mode}
             selectedDeviceIds={selectedDeviceIds}
+            rooms={rooms}
           />
         </section>
       </main>

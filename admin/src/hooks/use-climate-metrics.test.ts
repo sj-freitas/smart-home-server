@@ -34,7 +34,9 @@ describe("useClimateMetrics", () => {
       {
         roomId: "living-room",
         roomName: "Living Room",
-        data: [{ timestamp: "2024-01-01T00:00:00Z", temperature: 22, humidity: 45 }],
+        data: [
+          { timestamp: "2024-01-01T00:00:00Z", temperature: 22, humidity: 45 },
+        ],
       },
     ];
     mockFetchClimate.mockResolvedValue({ series: fakeSeries });

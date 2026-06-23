@@ -51,7 +51,11 @@ describe("RoomSelector", () => {
   it("calls onChange with all ids when 'All' button is clicked", () => {
     const { onChange } = renderSelector([]);
     fireEvent.click(screen.getByRole("button", { name: "All" }));
-    expect(onChange).toHaveBeenCalledWith(["living-room", "bedroom", "kitchen"]);
+    expect(onChange).toHaveBeenCalledWith([
+      "living-room",
+      "bedroom",
+      "kitchen",
+    ]);
   });
 
   it("calls onChange with empty array when 'None' button is clicked", () => {

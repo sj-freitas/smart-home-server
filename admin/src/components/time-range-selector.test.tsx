@@ -1,7 +1,11 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { TimeRangeSelector, presetToRange, defaultGranularityForPreset } from "./time-range-selector";
+import {
+  TimeRangeSelector,
+  presetToRange,
+  defaultGranularityForPreset,
+} from "./time-range-selector";
 
 describe("presetToRange", () => {
   it("returns a range roughly 1 hour wide for preset '1h'", () => {
@@ -31,7 +35,9 @@ describe("defaultGranularityForPreset", () => {
   });
 });
 
-function renderSelector(overrides?: Partial<Parameters<typeof TimeRangeSelector>[0]>) {
+function renderSelector(
+  overrides?: Partial<Parameters<typeof TimeRangeSelector>[0]>,
+) {
   const props = {
     activePreset: "24h" as const,
     customFrom: "2024-01-01T00:00",
@@ -73,7 +79,9 @@ describe("TimeRangeSelector", () => {
 
   it("calls onGranularityChange when the select changes", () => {
     const { onGranularityChange } = renderSelector();
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "day" } });
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "day" },
+    });
     expect(onGranularityChange).toHaveBeenCalledWith("day");
   });
 });

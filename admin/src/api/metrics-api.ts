@@ -5,7 +5,9 @@ import {
   Granularity,
 } from "../types";
 
-function buildQuery(params: Record<string, string | string[] | undefined>): string {
+function buildQuery(
+  params: Record<string, string | string[] | undefined>,
+): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined) continue;
