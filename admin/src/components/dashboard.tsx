@@ -16,6 +16,8 @@ import {
   savedPreset,
   savedGranularity,
   savedMode,
+  savedRoomIds,
+  savedDeviceIds,
 } from "../hooks/use-dashboard-cookie";
 import { Granularity, TimePreset } from "../types";
 
@@ -60,8 +62,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const saved = readDashboardCookie();
     return saved.customTo ?? toDatetimeLocal(new Date());
   });
-  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
-  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>(() =>
+    savedRoomIds(readDashboardCookie()),
+  );
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>(() =>
+    savedDeviceIds(readDashboardCookie()),
+  );
   const [mode, setMode] = useState<"temperature" | "humidity">(() => {
     return savedMode(readDashboardCookie());
   });
@@ -72,15 +78,29 @@ export function Dashboard({ onLogout }: DashboardProps) {
       preset: activePreset,
       granularity,
       mode,
+      selectedRoomIds,
+      selectedDeviceIds,
       ...(activePreset === "custom" ? { customFrom, customTo } : {}),
     });
-  }, [activePreset, granularity, mode, customFrom, customTo]);
+  }, [
+    activePreset,
+    granularity,
+    mode,
+    customFrom,
+    customTo,
+    selectedRoomIds,
+    selectedDeviceIds,
+  ]);
 
-  // Auto-select all rooms from useRooms once they load
+  // Once rooms load: restore saved selection (filtering out stale IDs), or default to all
   useEffect(() => {
-    if (rooms.length > 0 && selectedRoomIds.length === 0) {
-      setSelectedRoomIds(rooms.map((r) => r.id));
-    }
+    if (rooms.length === 0) return;
+    setSelectedRoomIds((prev) => {
+      if (prev.length === 0) return rooms.map((r) => r.id);
+      const validIds = new Set(rooms.map((r) => r.id));
+      const filtered = prev.filter((id) => validIds.has(id));
+      return filtered.length === 0 ? rooms.map((r) => r.id) : filtered;
+    });
   }, [rooms]);
 
   function handlePresetChange(preset: TimePreset) {
@@ -163,6 +183,15 @@ export function Dashboard({ onLogout }: DashboardProps) {
     refetchActions();
   }, [refetch, refetchActions]);
 
+  const handleClearFilters = useCallback(() => {
+    setSelectedRoomIds(rooms.map((r) => r.id));
+    setSelectedDeviceIds([]);
+  }, [rooms]);
+
+  const hasActiveFilter =
+    (rooms.length > 0 && selectedRoomIds.length < rooms.length) ||
+    selectedDeviceIds.length > 0;
+
   return (
     <div style={pageStyle}>
       <header style={headerStyle}>
@@ -236,6 +265,16 @@ export function Dashboard({ onLogout }: DashboardProps) {
             >
               ↻ Refresh
             </button>
+
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                style={clearFiltersButtonStyle}
+              >
+                ✕ Clear filters
+              </button>
+            )}
           </div>
 
           {allDeviceIds.length > 0 && (
@@ -365,6 +404,16 @@ const refetchButtonStyle: React.CSSProperties = {
   borderRadius: 4,
   background: "#1a1a2e",
   color: "#aaa",
+  cursor: "pointer",
+  fontSize: 12,
+};
+
+const clearFiltersButtonStyle: React.CSSProperties = {
+  padding: "4px 12px",
+  border: "1px solid #5a3a3a",
+  borderRadius: 4,
+  background: "#2e1a1a",
+  color: "#e08080",
   cursor: "pointer",
   fontSize: 12,
 };

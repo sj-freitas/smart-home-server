@@ -9,6 +9,8 @@ export interface StoredDashboardSettings {
   mode?: string;
   customFrom?: string;
   customTo?: string;
+  selectedRoomIds?: string[];
+  selectedDeviceIds?: string[];
 }
 
 export function readDashboardCookie(): StoredDashboardSettings {
@@ -57,4 +59,12 @@ export function savedMode(
   saved: StoredDashboardSettings,
 ): "temperature" | "humidity" {
   return saved.mode === "humidity" ? "humidity" : "temperature";
+}
+
+export function savedRoomIds(saved: StoredDashboardSettings): string[] {
+  return Array.isArray(saved.selectedRoomIds) ? saved.selectedRoomIds : [];
+}
+
+export function savedDeviceIds(saved: StoredDashboardSettings): string[] {
+  return Array.isArray(saved.selectedDeviceIds) ? saved.selectedDeviceIds : [];
 }
