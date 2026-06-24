@@ -59,7 +59,10 @@ export class MelCloudHomeClient {
       return response;
     }
 
-    this.logger.warn({ url }, "MelCloud: received 401, refreshing token and retrying");
+    this.logger.warn(
+      { url },
+      "MelCloud: received 401, refreshing token and retrying",
+    );
     await this.callForceRefresh();
     return makeRequest();
   }
@@ -113,9 +116,12 @@ export class MelCloudHomeClient {
   }
 
   async getContext(): Promise<RoomDevice[]> {
-    const response = await this.fetchAuthenticated(`${this.apiUrl}/user/context`, {
-      method: "GET",
-    });
+    const response = await this.fetchAuthenticated(
+      `${this.apiUrl}/user/context`,
+      {
+        method: "GET",
+      },
+    );
 
     if (response.status !== 200) {
       const body = await response.text();
@@ -206,9 +212,12 @@ export class MelCloudHomeClient {
   }
 
   async getDevice(deviceId: string): Promise<AirToAirUnit | null> {
-    const response = await this.fetchAuthenticated(`${this.apiUrl}/ataunit/${deviceId}`, {
-      method: "GET",
-    });
+    const response = await this.fetchAuthenticated(
+      `${this.apiUrl}/ataunit/${deviceId}`,
+      {
+        method: "GET",
+      },
+    );
 
     if (response.status !== 200) {
       const body = await response.text();
@@ -228,10 +237,13 @@ export class MelCloudHomeClient {
       "MelCloud: sending state change to device",
     );
 
-    const response = await this.fetchAuthenticated(`${this.apiUrl}/ataunit/${deviceId}`, {
-      method: "PUT",
-      body: JSON.stringify(stateChange),
-    });
+    const response = await this.fetchAuthenticated(
+      `${this.apiUrl}/ataunit/${deviceId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(stateChange),
+      },
+    );
 
     if (response.status !== 200) {
       const body = await response.text();
