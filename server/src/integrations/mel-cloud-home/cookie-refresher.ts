@@ -6,7 +6,7 @@ import { startScheduler } from "../../helpers/scheduler";
 import { withRetries } from "../../helpers/retry";
 import { PinoLogger } from "nestjs-pino";
 
-const ONE_HOUR_MS = 1000 * 60 * 60 * 1;
+const THIRTY_MINUTES_MS = 1000 * 60 * 30;
 
 function createRefreshAuthCookiesFunction(
   melCloudHomeConfig: MelCloudHomeIntegration,
@@ -74,7 +74,7 @@ export async function spinCookieRefresher(
       { source: "background", task: "cookie-refresh" },
       "MelCloud: no existing cookies found, performing initial refresh and scheduling periodic runs",
     );
-    await startScheduler(refreshAuthCookiesTask, ONE_HOUR_MS);
+    await startScheduler(refreshAuthCookiesTask, THIRTY_MINUTES_MS);
   }
 
   return refreshAuthCookiesTask;

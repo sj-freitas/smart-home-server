@@ -35,6 +35,35 @@ export class MelCloudHomeClient {
     private readonly logger: PinoLogger,
   ) {}
 
+  private async fetchAuthenticated(
+    url: string,
+    init: RequestInit,
+  ): Promise<Response> {
+    const makeRequest = async () => {
+      const authCookie = await this.authenticationCookies.retrieveAuthCookies();
+      if (!authCookie) {
+        throw new Error(`Unexpected missing auth cookie for MelCloud`);
+      }
+      return fetch(url, {
+        ...init,
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf": "1",
+          Cookie: authCookie,
+        },
+      });
+    };
+
+    const response = await makeRequest();
+    if (response.status !== 401) {
+      return response;
+    }
+
+    this.logger.warn({ url }, "MelCloud: received 401, refreshing token and retrying");
+    await this.callForceRefresh();
+    return makeRequest();
+  }
+
   private callForceRefresh(): Promise<void> {
     if (!this.forceRefresh) return Promise.resolve();
     if (!this.refreshInFlight) {
@@ -84,18 +113,8 @@ export class MelCloudHomeClient {
   }
 
   async getContext(): Promise<RoomDevice[]> {
-    const authCookie = await this.authenticationCookies.retrieveAuthCookies();
-    if (!authCookie) {
-      throw new Error(`Unexpected missing auth cookie for MelCloud`);
-    }
-
-    const response = await fetch(`${this.apiUrl}/user/context`, {
+    const response = await this.fetchAuthenticated(`${this.apiUrl}/user/context`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "x-csrf": "1",
-        Cookie: authCookie,
-      },
     });
 
     if (response.status !== 200) {
@@ -187,18 +206,8 @@ export class MelCloudHomeClient {
   }
 
   async getDevice(deviceId: string): Promise<AirToAirUnit | null> {
-    const authCookie = await this.authenticationCookies.retrieveAuthCookies();
-    if (!authCookie) {
-      throw new Error(`Unexpected missing auth cookie for MelCloud`);
-    }
-
-    const response = await fetch(`${this.apiUrl}/ataunit/${deviceId}`, {
+    const response = await this.fetchAuthenticated(`${this.apiUrl}/ataunit/${deviceId}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "x-csrf": "1",
-        Cookie: authCookie,
-      },
     });
 
     if (response.status !== 200) {
@@ -214,23 +223,13 @@ export class MelCloudHomeClient {
   }
 
   async putAtAUnit(deviceId: string, stateChange: AirToAirUnitStateChange) {
-    const authCookie = await this.authenticationCookies.retrieveAuthCookies();
-    if (!authCookie) {
-      throw new Error(`Unexpected missing auth cookie for MelCloud`);
-    }
-
     this.logger.debug(
       { deviceId, stateChange },
       "MelCloud: sending state change to device",
     );
 
-    const response = await fetch(`${this.apiUrl}/ataunit/${deviceId}`, {
+    const response = await this.fetchAuthenticated(`${this.apiUrl}/ataunit/${deviceId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "x-csrf": "1",
-        Cookie: authCookie,
-      },
       body: JSON.stringify(stateChange),
     });
 
