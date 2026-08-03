@@ -48,6 +48,20 @@ const PAGE_STYLE = `
   a {
     color: #0969da;
   }
+  .home-info-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .home-info-header img {
+    max-width: 3rem;
+    max-height: 3rem;
+    border-radius: 8px;
+  }
+  .home-info-header h1 {
+    margin: 0;
+  }
   @media (prefers-color-scheme: dark) {
     body {
       color: #e6edf3;
@@ -78,8 +92,12 @@ export class HomeInfoController {
     @Param("homeId") homeId: string,
     @Res() response: Response,
   ) {
-    const { homeId: configuredHomeId, name } =
-      this.configService.getConfig().home;
+    const {
+      homeId: configuredHomeId,
+      name,
+      iconUrl,
+      faviconUrl,
+    } = this.configService.getConfig().home;
 
     if (homeId !== configuredHomeId) {
       throw new NotFoundException("Home not found");
@@ -93,6 +111,12 @@ export class HomeInfoController {
     }
 
     const contentHtml = await marked.parse(homeInfo.markdown);
+    const faviconLink = faviconUrl
+      ? `<link rel="icon" href="${faviconUrl}" />`
+      : "";
+    const headerHtml = iconUrl
+      ? `<div class="home-info-header"><img src="${iconUrl}" alt="${name} icon" /><h1>${name}</h1></div>`
+      : "";
 
     response.set("Content-Type", "text/html; charset=utf-8");
     return response.send(
@@ -102,9 +126,11 @@ export class HomeInfoController {
     <meta charset="UTF-8" />
     <title>${name}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    ${faviconLink}
     <style>${PAGE_STYLE}</style>
   </head>
   <body>
+    ${headerHtml}
     ${contentHtml}
   </body>
 </html>`,
