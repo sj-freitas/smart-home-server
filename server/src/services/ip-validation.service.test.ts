@@ -2,7 +2,11 @@ import { IpValidationService } from "./ip-validation.service";
 import { RequestContext } from "./request-context";
 import { HomeConfig } from "../config/home.zod";
 
-const baseConfig: HomeConfig = { name: "Test Home", rooms: [] };
+const baseConfig: HomeConfig = {
+  homeId: "test-home",
+  name: "Test Home",
+  rooms: [],
+};
 
 const makeConfig = (ip?: string): HomeConfig => ({ ...baseConfig, ip });
 

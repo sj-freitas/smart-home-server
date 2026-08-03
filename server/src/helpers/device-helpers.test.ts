@@ -3,6 +3,7 @@ import { HomeConfig } from "../config/home.zod";
 import { ShellyIntegrationDevice } from "../config/integration.zod";
 
 const mockHome: HomeConfig = {
+  homeId: "test-home",
   name: "Test Home",
   rooms: [
     {

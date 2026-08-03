@@ -21,6 +21,7 @@
     }
   ],
   "home": {
+    "homeId": "palais_freitas",
     "pageTitle": "Palais Freitas",
     "name": "Palais Freitas",
     "ip": "{{APP_HOME_IP}}",

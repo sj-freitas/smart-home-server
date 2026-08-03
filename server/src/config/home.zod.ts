@@ -61,6 +61,7 @@ export const RoomConfigZod = z.object({
 });
 
 export const HomeConfigZod = z.object({
+  homeId: z.string().readonly(),
   pageTitle: z.string().optional().readonly(),
   name: z.string().readonly(),
   subTitle: z.string().optional().readonly(),
