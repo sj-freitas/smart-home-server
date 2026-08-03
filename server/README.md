@@ -54,10 +54,10 @@ The Home Info feature serves a markdown description of the home (and any images 
 
 Routes:
 
-- `GET /home-info/:homeId` — renders the latest markdown entry for that home to HTML (using [marked](https://www.npmjs.com/package/marked)) and serves it as a static `text/html` page.
-- `GET /static/images/:homeId/:name` — decodes the stored base64 data and serves it as `image/jpeg`.
+- `GET /home-info/:homeId` — renders the latest markdown entry for that home to HTML (using [marked](https://www.npmjs.com/package/marked)) and serves it as a static `text/html` page, styled with a default readable font/layout (light and dark mode aware). Markdown indentation (e.g. nested lists relying on indent alone) isn't specially supported, that's a `marked` default and expected.
+- `GET /static/images/:homeId/:name` — decodes the stored base64 data and serves it as `image/jpeg`. Accepts optional `?width=` and/or `?height=` query params (integers, 1-4000) to resize the image on the fly via [sharp](https://www.npmjs.com/package/sharp), preserving aspect ratio (`fit: "inside"`) — pass just one dimension to scale by that axis alone. Omit both to get the original stored bytes untouched.
 
-Since images are served from the same host, markdown entries can reference them with an absolute path, e.g. `![Living room](/static/images/palais_freitas/cover.jpg)`.
+Since images are served from the same host, markdown entries can reference them with an absolute path, e.g. `![Living room](/static/images/palais_freitas/cover.jpg)` or `![Living room](/static/images/palais_freitas/cover.jpg?width=800)`.
 
 ### Authorization
 
