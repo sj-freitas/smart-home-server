@@ -43,6 +43,22 @@ An action is the operation you can do through a device, Actions are performed th
 the ones defined in the config file. Once an Action is performed, the specific Integration will run that action based on the parameters in the config file. This should successfully
 result in the state of the Device changing such as, for example, turning on some lights or switching their color.
 
+### Home Info
+
+The Home Info feature serves a markdown description of the home (and any images it references) directly from the database, rendered server-side — there's no client involved.
+
+- `home_id` in the config (`home.homeId`, see [home.zod.ts](./src/config/home.zod.ts)) identifies the home and must match the `:homeId` route param on every request below, otherwise a 404 is returned.
+- `home_info` table: each row is a markdown entry for a `home_id`. When more than one entry exists for the same home, the most recently created one is served — insert a new row to publish an update, there is no write API, entries are added directly to the database.
+- `home_info_images` table: each row is a base64-encoded JPEG for a `home_id`, keyed by a unique `name` (e.g. `cover.jpg`) — also inserted directly into the database, no write API.
+- See migration [00007.migration.sql](./db/00007.migration.sql) for both table definitions.
+
+Routes:
+
+- `GET /home-info/:homeId` — renders the latest markdown entry for that home to HTML (using [marked](https://www.npmjs.com/package/marked)) and serves it as a static `text/html` page.
+- `GET /static/images/:homeId/:name` — decodes the stored base64 data and serves it as `image/jpeg`.
+
+Since images are served from the same host, markdown entries can reference them with an absolute path, e.g. `![Living room](/static/images/palais_freitas/cover.jpg)`.
+
 ### Authorization
 
 The API supports 3 ways to access the resources:

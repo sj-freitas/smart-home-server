@@ -5,6 +5,7 @@ import { HomeConfig } from "../../config/home.zod";
 import { DeviceState, HomeState } from "./types.zod";
 
 const homeConfig: HomeConfig = {
+  homeId: "test-home",
   name: "My Home",
   rooms: [
     {
@@ -139,6 +140,7 @@ describe("StateService.addToState", () => {
 
   it("updates room temperature from the designated temperature device", async () => {
     const configWithSensor: HomeConfig = {
+      homeId: "test-home",
       name: "My Home",
       rooms: [
         {
@@ -171,6 +173,7 @@ describe("StateService.addToState", () => {
 
 describe("StateService.addToState — climate metrics recording", () => {
   const sensorConfig: HomeConfig = {
+    homeId: "test-home",
     name: "My Home",
     rooms: [
       {
@@ -274,6 +277,7 @@ describe("StateService.addToState — climate metrics recording", () => {
 
   it("records climate for multiple rooms that share the same sensor", async () => {
     const sharedSensorConfig: HomeConfig = {
+      homeId: "test-home",
       name: "My Home",
       rooms: [
         {

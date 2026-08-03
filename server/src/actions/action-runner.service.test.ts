@@ -74,6 +74,7 @@ function makeMetrics(): jest.Mocked<MetricsPersistenceService> {
 }
 
 const baseConfig: HomeConfig = {
+  homeId: "test-home",
   name: "Test Home",
   rooms: [
     {
