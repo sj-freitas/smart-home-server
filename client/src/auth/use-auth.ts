@@ -13,6 +13,7 @@ type AuthenticationStates =
 function buildGoogleAuthUrl(
   clientId: string,
   redirectUri: string,
+  state: string,
   scope: string[] = DEFAULT_SCOPE,
 ) {
   const params = new URLSearchParams({
@@ -22,7 +23,7 @@ function buildGoogleAuthUrl(
     scope: scope.join(" "),
     access_type: "offline",
     prompt: "consent",
-    state: Math.random().toString(36).slice(2),
+    state,
   });
   return `${GOOGLE_AUTH_V2_URL}/auth?${params.toString()}`;
 }
@@ -107,7 +108,8 @@ export const useAuthentication = (): UseAuthenticationReturnType => {
   const startLogin = useCallback(() => {
     setAppMode("LoggingIn");
     const redirectUri = `${API_BASE}/google/callback`;
-    const url = buildGoogleAuthUrl(CLIENT_ID, redirectUri);
+    const returnPath = window.location.pathname + window.location.search;
+    const url = buildGoogleAuthUrl(CLIENT_ID, redirectUri, returnPath);
     window.location.href = url;
   }, [API_BASE, CLIENT_ID]);
 
