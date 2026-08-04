@@ -173,7 +173,7 @@ describe("StateService.addToState", () => {
   });
 });
 
-describe("StateService.addToState — climate metrics recording", () => {
+describe("StateService.addToState - climate metrics recording", () => {
   const sensorConfig: HomeConfig = {
     homeId: "test-home",
     name: "My Home",

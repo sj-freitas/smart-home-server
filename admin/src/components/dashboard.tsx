@@ -153,7 +153,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     to: timeRange.to,
   });
 
-  // Polling every 2 minutes — use refs so the interval closure never goes stale
+  // Polling every 2 minutes - use refs so the interval closure never goes stale
   const refetchRef = useRef(refetch);
   const refetchActionsRef = useRef(refetchActions);
   useEffect(() => {

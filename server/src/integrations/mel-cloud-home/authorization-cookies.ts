@@ -59,7 +59,7 @@ async function getMelCloudHomeSecureCookies(
 
 /**
  * Launches a headless browser, logs in to MEL Cloud Home, and returns the auth cookies.
- * Throws on failure — callers should wrap with withRetries if retry behaviour is desired.
+ * Throws on failure - callers should wrap with withRetries if retry behaviour is desired.
  */
 export async function getAuthorizationCookies(
   melCloudHomeConfig: MelCloudHomeIntegration,

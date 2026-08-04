@@ -1,7 +1,7 @@
 import type { Request } from "express";
 
 function getClientIp(req: Request): string | null {
-  // X-Forwarded-For may contain a comma separated list — client is first
+  // X-Forwarded-For may contain a comma separated list - client is first
   const xff = (req.headers["x-forwarded-for"] as string) || "";
   const candidate =
     xff

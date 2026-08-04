@@ -45,21 +45,21 @@ result in the state of the Device changing such as, for example, turning on some
 
 ### Home Info
 
-The Home Info feature stores a markdown description of the home (and any images it references) in the database. The API only serves the raw data — markdown rendering happens client-side, in a dedicated page in [client/](../client), guarded by the same auth flow as the rest of the app.
+The Home Info feature stores a markdown description of the home (and any images it references) in the database. The API only serves the raw data - markdown rendering happens client-side, in a dedicated page in [client/](../client), guarded by the same auth flow as the rest of the app.
 
 - `home_id` in the config (`home.homeId`, see [home.zod.ts](./src/config/home.zod.ts)) identifies the home and must match the `:homeId` route param on every request below, otherwise a 404 is returned.
-- `home_info` table: each row is a markdown entry for a `home_id`. When more than one entry exists for the same home, the most recently created one is served — insert a new row to publish an update, there is no write API, entries are added directly to the database.
-- `home_info_images` table: each row is a base64-encoded JPEG for a `home_id`, keyed by a unique `name` (e.g. `cover.jpg`) — also inserted directly into the database, no write API.
+- `home_info` table: each row is a markdown entry for a `home_id`. When more than one entry exists for the same home, the most recently created one is served - insert a new row to publish an update, there is no write API, entries are added directly to the database.
+- `home_info_images` table: each row is a base64-encoded JPEG for a `home_id`, keyed by a unique `name` (e.g. `cover.jpg`) - also inserted directly into the database, no write API.
 - See migration [00007.migration.sql](./db/00007.migration.sql) for both table definitions.
 
-Routes (both under `/api`, both gated by [AuthGuard](./src/services/auth.guard.ts) — same IP/session/API-key check as the rest of the API, see [Authorization](#authorization) below):
+Routes (both under `/api`, both gated by [AuthGuard](./src/services/auth.guard.ts) - same IP/session/API-key check as the rest of the API, see [Authorization](#authorization) below):
 
-- `GET /api/home-info/:homeId` — returns `{ markdown, updatedAt, bannerUrl }` JSON for the latest entry. `bannerUrl` is read straight from `home.bannerUrl` in the config (not the database) — `null` when not configured.
-- `GET /api/static/images/:homeId/:name` — decodes the stored base64 data and serves it as `image/jpeg`. Accepts optional `?width=` and/or `?height=` query params (integers, 1-4000) to resize the image on the fly via [sharp](https://www.npmjs.com/package/sharp), preserving aspect ratio (`fit: "inside"`) — pass just one dimension to scale by that axis alone. Omit both to get the original stored bytes untouched.
+- `GET /api/home-info/:homeId` - returns `{ markdown, updatedAt, bannerUrl }` JSON for the latest entry. `bannerUrl` is read straight from `home.bannerUrl` in the config (not the database) - `null` when not configured.
+- `GET /api/static/images/:homeId/:name` - decodes the stored base64 data and serves it as `image/jpeg`. Accepts optional `?width=` and/or `?height=` query params (integers, 1-4000) to resize the image on the fly via [sharp](https://www.npmjs.com/package/sharp), preserving aspect ratio (`fit: "inside"`) - pass just one dimension to scale by that axis alone. Omit both to get the original stored bytes untouched.
 
 Since images are served from the same host, markdown entries (and `home.bannerUrl` in the config) can reference them with an absolute path, e.g. `![Living room](/api/static/images/palais-freitas/cover.jpg)` or `![Living room](/api/static/images/palais-freitas/cover.jpg?width=800)`.
 
-The client renders this at `/home-info/:homeId` (see [home-info-page.tsx](../client/src/home-info-page.tsx)) — markdown → HTML via [marked](https://www.npmjs.com/package/marked), same login-redirect behavior as the main app on a 401.
+The client renders this at `/home-info/:homeId` (see [home-info-page.tsx](../client/src/home-info-page.tsx)) - markdown → HTML via [marked](https://www.npmjs.com/package/marked), same login-redirect behavior as the main app on a 401.
 
 ### Authorization
 

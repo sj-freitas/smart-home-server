@@ -110,7 +110,7 @@ function CustomTooltip({
             `${entry.value}%`)
           : entry.value != null
             ? (entry.value as number).toFixed(1)
-            : "—";
+            : "-";
         return (
           <p key={entry.name} style={{ margin: "2px 0", color: entry.color }}>
             {entry.name}: {displayValue}
