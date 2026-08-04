@@ -89,7 +89,9 @@ const PAGE_STYLE = `
   }
   .home-info-banner {
     width: 100%;
-    height: 280px;
+    /* Extend up behind the iPhone notch / Dynamic Island instead of being
+       pushed down below it (requires viewport-fit=cover in index.html). */
+    height: calc(280px + env(safe-area-inset-top, 0px));
     overflow: hidden;
   }
   .home-info-banner img {
