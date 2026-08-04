@@ -62,6 +62,9 @@ const PAGE_STYLE = `
     margin-top: 0;
     margin-bottom: 1em;
   }
+  .home-info-page > div > :first-child {
+    margin-top: 0;
+  }
   .home-info-page img {
     max-width: 100%;
     height: auto;
