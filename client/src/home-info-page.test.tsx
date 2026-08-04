@@ -56,6 +56,39 @@ describe("HomeInfoPage", () => {
     );
   });
 
+  it("renders a banner image when bannerUrl is present", async () => {
+    mockFetch.mockReturnValueOnce(
+      mockResponse(200, {
+        markdown: "# Welcome Home",
+        bannerUrl: "https://example.com/banner.jpg",
+      }),
+    );
+
+    render(<HomeInfoPage homeId="palais-freitas" />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("img")).toHaveAttribute(
+        "src",
+        "https://example.com/banner.jpg",
+      ),
+    );
+  });
+
+  it("does not render a banner image when bannerUrl is absent", async () => {
+    mockFetch.mockReturnValueOnce(
+      mockResponse(200, { markdown: "# Welcome Home" }),
+    );
+
+    render(<HomeInfoPage homeId="palais-freitas" />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Welcome Home" }),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
   it("shows a not-found message on 404", async () => {
     mockFetch.mockReturnValueOnce(mockResponse(404));
 

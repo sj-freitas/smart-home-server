@@ -6,9 +6,12 @@ import {
   HomeInfoPersistenceService,
 } from "./home-info.persistence.service";
 
-function makeConfigService(homeId = "palais-freitas"): ConfigService {
+function makeConfigService(
+  homeId = "palais-freitas",
+  overrides: Record<string, unknown> = {},
+): ConfigService {
   return {
-    getConfig: jest.fn().mockReturnValue({ home: { homeId } }),
+    getConfig: jest.fn().mockReturnValue({ home: { homeId, ...overrides } }),
   } as unknown as ConfigService;
 }
 
@@ -59,7 +62,25 @@ describe("HomeInfoController", () => {
       expect(result).toEqual({
         markdown: "# Welcome Home",
         updatedAt: createdAt,
+        bannerUrl: null,
       });
+    });
+
+    it("includes the configured bannerUrl when present", async () => {
+      const configService = makeConfigService("palais-freitas", {
+        bannerUrl: "https://example.com/banner.jpg",
+      });
+      const persistence = makeHomeInfoPersistenceService({
+        id: "uuid-1",
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+        homeId: "palais-freitas",
+        markdown: "# Welcome Home",
+      });
+      const controller = new HomeInfoController(configService, persistence);
+
+      const result = await controller.getHomeInfo("palais-freitas");
+
+      expect(result.bannerUrl).toBe("https://example.com/banner.jpg");
     });
   });
 });

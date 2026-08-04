@@ -19,7 +19,8 @@ export class HomeInfoController {
 
   @Get("/:homeId")
   public async getHomeInfo(@Param("homeId") homeId: string) {
-    const { homeId: configuredHomeId } = this.configService.getConfig().home;
+    const { homeId: configuredHomeId, bannerUrl } =
+      this.configService.getConfig().home;
 
     if (homeId !== configuredHomeId) {
       throw new NotFoundException("Home not found");
@@ -32,6 +33,10 @@ export class HomeInfoController {
       throw new NotFoundException("Home info not found");
     }
 
-    return { markdown: homeInfo.markdown, updatedAt: homeInfo.createdAt };
+    return {
+      markdown: homeInfo.markdown,
+      updatedAt: homeInfo.createdAt,
+      bannerUrl: bannerUrl ?? null,
+    };
   }
 }

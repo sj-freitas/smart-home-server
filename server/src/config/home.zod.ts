@@ -69,6 +69,7 @@ export const HomeConfigZod = z.object({
   ip: z.string().readonly().optional(),
   iconUrl: z.string().readonly().optional(),
   faviconUrl: z.string().readonly().optional(),
+  bannerUrl: z.string().readonly().optional(),
 });
 
 export type TimerOnAction = z.infer<typeof TimerOnActionZod>;
