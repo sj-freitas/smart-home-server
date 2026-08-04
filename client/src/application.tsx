@@ -30,6 +30,7 @@ export default function Application() {
   const [loading, setLoading] = useState(true);
   const { state, setStateSuppressSocket } = useHomeState();
   const API_BASE = import.meta.env.VITE_API_HOSTNAME;
+  const HOME_SLUG = import.meta.env.VITE_HOME_SLUG;
   const iconUrlFromServer = state?.faviconUrl;
   const titleFromServer = state?.pageTitle;
   const { appMode, shouldRenderLogoutButton, logout, startLogin } =
@@ -142,6 +143,12 @@ export default function Application() {
           }
         }}
       />
+
+      {HOME_SLUG && (
+        <a className="logout-link" href={`/home-info/${HOME_SLUG}`}>
+          Home Info
+        </a>
+      )}
 
       {shouldRenderLogoutButton && (
         <button type="button" className="logout-link" onClick={logout}>

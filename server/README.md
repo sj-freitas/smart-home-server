@@ -45,19 +45,21 @@ result in the state of the Device changing such as, for example, turning on some
 
 ### Home Info
 
-The Home Info feature serves a markdown description of the home (and any images it references) directly from the database, rendered server-side — there's no client involved.
+The Home Info feature stores a markdown description of the home (and any images it references) in the database. The API only serves the raw data — markdown rendering happens client-side, in a dedicated page in [client/](../client), guarded by the same auth flow as the rest of the app.
 
 - `home_id` in the config (`home.homeId`, see [home.zod.ts](./src/config/home.zod.ts)) identifies the home and must match the `:homeId` route param on every request below, otherwise a 404 is returned.
 - `home_info` table: each row is a markdown entry for a `home_id`. When more than one entry exists for the same home, the most recently created one is served — insert a new row to publish an update, there is no write API, entries are added directly to the database.
 - `home_info_images` table: each row is a base64-encoded JPEG for a `home_id`, keyed by a unique `name` (e.g. `cover.jpg`) — also inserted directly into the database, no write API.
 - See migration [00007.migration.sql](./db/00007.migration.sql) for both table definitions.
 
-Routes:
+Routes (both under `/api`, both gated by [AuthGuard](./src/services/auth.guard.ts) — same IP/session/API-key check as the rest of the API, see [Authorization](#authorization) below):
 
-- `GET /home-info/:homeId` — renders the latest markdown entry for that home to HTML (using [marked](https://www.npmjs.com/package/marked)) and serves it as a static `text/html` page, styled with a default readable font/layout (light and dark mode aware). Markdown indentation (e.g. nested lists relying on indent alone) isn't specially supported, that's a `marked` default and expected.
+- `GET /api/home-info/:homeId` — returns `{ markdown, updatedAt }` JSON for the latest entry.
 - `GET /static/images/:homeId/:name` — decodes the stored base64 data and serves it as `image/jpeg`. Accepts optional `?width=` and/or `?height=` query params (integers, 1-4000) to resize the image on the fly via [sharp](https://www.npmjs.com/package/sharp), preserving aspect ratio (`fit: "inside"`) — pass just one dimension to scale by that axis alone. Omit both to get the original stored bytes untouched.
 
-Since images are served from the same host, markdown entries can reference them with an absolute path, e.g. `![Living room](/static/images/palais_freitas/cover.jpg)` or `![Living room](/static/images/palais_freitas/cover.jpg?width=800)`.
+Since images are served from the same host, markdown entries can reference them with an absolute path, e.g. `![Living room](/static/images/palais-freitas/cover.jpg)` or `![Living room](/static/images/palais-freitas/cover.jpg?width=800)`.
+
+The client renders this at `/home-info/:homeId` (see [home-info-page.tsx](../client/src/home-info-page.tsx)) — markdown → HTML via [marked](https://www.npmjs.com/package/marked), same login-redirect behavior as the main app on a 401.
 
 ### Authorization
 

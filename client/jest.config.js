@@ -7,5 +7,5 @@ module.exports = {
     '^.+\\.(ts|tsx)$': 'babel-jest',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  setupFiles: ['<rootDir>/jest.setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 };

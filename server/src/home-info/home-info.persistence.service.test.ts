@@ -13,7 +13,7 @@ describe("HomeInfoPersistenceService", () => {
       const pool = makePool([]);
       const svc = new HomeInfoPersistenceService(pool);
 
-      const result = await svc.getLatestByHomeId("palais_freitas");
+      const result = await svc.getLatestByHomeId("palais-freitas");
 
       expect(result).toBeNull();
     });
@@ -24,18 +24,18 @@ describe("HomeInfoPersistenceService", () => {
         {
           id: "uuid-1",
           created_at: createdAt,
-          home_id: "palais_freitas",
+          home_id: "palais-freitas",
           markdown: "# Welcome",
         },
       ]);
       const svc = new HomeInfoPersistenceService(pool);
 
-      const result = await svc.getLatestByHomeId("palais_freitas");
+      const result = await svc.getLatestByHomeId("palais-freitas");
 
       expect(result).toEqual({
         id: "uuid-1",
         createdAt,
-        homeId: "palais_freitas",
+        homeId: "palais-freitas",
         markdown: "# Welcome",
       });
     });
@@ -44,19 +44,19 @@ describe("HomeInfoPersistenceService", () => {
       const pool = makePool([]);
       const svc = new HomeInfoPersistenceService(pool);
 
-      await svc.getLatestByHomeId("palais_freitas");
+      await svc.getLatestByHomeId("palais-freitas");
 
       expect(pool.query).toHaveBeenCalledWith(
         expect.stringContaining("WHERE home_id = $1"),
-        ["palais_freitas"],
+        ["palais-freitas"],
       );
       expect(pool.query).toHaveBeenCalledWith(
         expect.stringContaining("ORDER BY created_at DESC"),
-        ["palais_freitas"],
+        ["palais-freitas"],
       );
       expect(pool.query).toHaveBeenCalledWith(
         expect.stringContaining("LIMIT 1"),
-        ["palais_freitas"],
+        ["palais-freitas"],
       );
     });
   });
