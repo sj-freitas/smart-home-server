@@ -29,7 +29,7 @@ export function useAuth(): UseAuthReturnType {
         }
       })
       .catch(() => {
-        // Network error — treat as unauthenticated
+        // Network error - treat as unauthenticated
         window.location.href = "/";
       });
   }, [authState]);

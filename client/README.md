@@ -21,9 +21,9 @@ Vite uses a `.env` naming convention:
 
 `/home-info/:homeId` ([home-info-page.tsx](./src/home-info-page.tsx)) fetches raw markdown from `GET <VITE_API_HOSTNAME>/home-info/:homeId` and renders it to HTML client-side via [marked](https://www.npmjs.com/package/marked). It's linked from the main app's "Home Info" link (built from `VITE_HOME_SLUG`).
 
-This page intentionally does **not** use the main app's dark dashboard theme (`styles.css`) — it renders its own scoped `<style>` block with a plain, readable default (light/dark aware via `prefers-color-scheme`), since it's meant to read as a standalone document, not part of the app shell.
+This page intentionally does **not** use the main app's dark dashboard theme (`styles.css`) - it renders its own scoped `<style>` block with a plain, readable default (light/dark aware via `prefers-color-scheme`), since it's meant to read as a standalone document, not part of the app shell.
 
-There's no router library in this app — `main.tsx` matches `window.location.pathname` against `/home-info/:homeId` directly and renders either `HomeInfoPage` or `Application`. The endpoint is gated by the same auth as the rest of the API: a 401 triggers the same Google login redirect used elsewhere (via `useAuthentication().startLogin()`), a 403 shows an access-denied message, a 404 shows a not-found message.
+There's no router library in this app - `main.tsx` matches `window.location.pathname` against `/home-info/:homeId` directly and renders either `HomeInfoPage` or `Application`. The endpoint is gated by the same auth as the rest of the API: a 401 triggers the same Google login redirect used elsewhere (via `useAuthentication().startLogin()`), a 403 shows an access-denied message, a 404 shows a not-found message.
 
 If the API response includes a `bannerUrl` (from `home.bannerUrl` in the server config), it's rendered as a full-width photo banner above the markdown content, before anything else on the page. It's omitted entirely when not configured.
 
@@ -34,7 +34,7 @@ This request can return a 401, the app handles the login via GoogleAuth, 403, th
 The login is handled by Google by redirecting the page to the login page, once the flow is complete the API will set a `session` cookie. The API will persist the cookies
 in the database. So the client doesn't need to handle any of the session logic as long as the `credentials` are sent to the API.
 
-`startLogin()` sends the current path (`window.location.pathname + search`) as the OAuth `state` param, so after Google redirects back to the API's callback, the API redirects the browser back to the page the user was actually on (e.g. `/home-info/palais-freitas`) instead of always landing on `/`. The API only honors `state` as a redirect target when it's a same-origin relative path — see `isSafeReturnPath` in [auth-google.controller.ts](../server/src/controllers/auth-google/auth-google.controller.ts).
+`startLogin()` sends the current path (`window.location.pathname + search`) as the OAuth `state` param, so after Google redirects back to the API's callback, the API redirects the browser back to the page the user was actually on (e.g. `/home-info/palais-freitas`) instead of always landing on `/`. The API only honors `state` as a redirect target when it's a same-origin relative path - see `isSafeReturnPath` in [auth-google.controller.ts](../server/src/controllers/auth-google/auth-google.controller.ts).
 
 To test locally the VITE_GOOGLE_CLIENT_ID can be set but you'll need to create a GoogleAuth Client.
 

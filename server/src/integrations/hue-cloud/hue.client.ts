@@ -89,7 +89,7 @@ export class HueClient {
       try {
         return await this.refreshInFlight;
       } catch (err) {
-        // previous refresh failed — clear and propagate
+        // previous refresh failed - clear and propagate
         this.refreshInFlight = null;
         throw err;
       }
@@ -144,7 +144,7 @@ export class HueClient {
         : "unknown";
 
       console.warn(
-        `Hue rate limit exceeded — limit: ${limitInfo}, resets in: ${resetInfo}`,
+        `Hue rate limit exceeded - limit: ${limitInfo}, resets in: ${resetInfo}`,
       );
       return null;
     }

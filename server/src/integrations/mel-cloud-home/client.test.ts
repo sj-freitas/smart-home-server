@@ -250,7 +250,7 @@ describe("MelCloudHomeClient.getContext", () => {
     expect(result).toEqual([]);
   });
 
-  it("deduplicates concurrent forceRefresh calls — only one Puppeteer session runs at a time", async () => {
+  it("deduplicates concurrent forceRefresh calls - only one Puppeteer session runs at a time", async () => {
     let resolveRefresh!: () => void;
     const refreshPromise = new Promise<void>((res) => {
       resolveRefresh = res;

@@ -54,7 +54,7 @@ export class StaticController {
       return response.sendFile(indexPath);
     }
 
-    // If index missing — respond 404
+    // If index missing - respond 404
     throw new NotFoundException("SPA index.html not found");
   }
 }
