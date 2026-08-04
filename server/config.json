@@ -28,6 +28,7 @@
     "subTitle": "{{MY_HOME_ADDRESS_1}}\n{{MY_HOME_ADDRESS_2}}",
     "iconUrl": "{{APP_DOMAIN_URL}}/files/palais-freitas-logo.svg",
     "faviconUrl": "{{APP_DOMAIN_URL}}/files/favicon.svg",
+    "bannerUrl": "{{APP_DOMAIN_URL}}/static/images/palais-freitas/banner.jpg",
     "rooms": [
       {
         "id": "living_room",

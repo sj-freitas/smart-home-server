@@ -28,6 +28,7 @@ function alterHomeState(
           pageTitle: homeConfig.pageTitle ?? "",
           logo: homeConfig.iconUrl ?? "",
           faviconUrl: homeConfig.faviconUrl ?? "",
+          bannerUrl: homeConfig.bannerUrl ?? "",
           subTitle: homeConfig.subTitle ?? "",
           rooms: [],
         };

@@ -69,6 +69,7 @@ describe("StateService.addToState", () => {
       pageTitle: "",
       logo: "",
       faviconUrl: "",
+      bannerUrl: "",
       subTitle: "",
       rooms: [
         {
@@ -108,6 +109,7 @@ describe("StateService.addToState", () => {
       pageTitle: "",
       logo: "",
       faviconUrl: "",
+      bannerUrl: "",
       subTitle: "",
       rooms: [
         {

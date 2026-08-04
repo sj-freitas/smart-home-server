@@ -21,5 +21,6 @@ export type Home = {
   name: string;
   subTitle?: string;
   logo?: string;
+  bannerUrl?: string;
   rooms: Room[];
 };

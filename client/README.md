@@ -25,6 +25,8 @@ This page intentionally does **not** use the main app's dark dashboard theme (`s
 
 There's no router library in this app — `main.tsx` matches `window.location.pathname` against `/home-info/:homeId` directly and renders either `HomeInfoPage` or `Application`. The endpoint is gated by the same auth as the rest of the API: a 401 triggers the same Google login redirect used elsewhere (via `useAuthentication().startLogin()`), a 403 shows an access-denied message, a 404 shows a not-found message.
 
+If the API response includes a `bannerUrl` (from `home.bannerUrl` in the server config), it's rendered as a full-width photo banner above the markdown content, before anything else on the page. It's omitted entirely when not configured.
+
 ## Auth
 
 The application requests a GET: `curl '<VITE_API_HOSTNAME>/api/auth/check'` to make sure that the user has access to the API.

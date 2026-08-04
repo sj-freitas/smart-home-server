@@ -8,7 +8,7 @@ type LoadState =
   | { status: "forbidden" }
   | { status: "not-found" }
   | { status: "error" }
-  | { status: "ready"; html: string };
+  | { status: "ready"; html: string; bannerUrl: string | null };
 
 const PAGE_STYLE = `
   html, body {
@@ -87,6 +87,17 @@ const PAGE_STYLE = `
   .home-info-page a {
     color: #0969da;
   }
+  .home-info-banner {
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+  }
+  .home-info-banner img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
   @media (prefers-color-scheme: dark) {
     html, body {
       background: #0d1117;
@@ -105,10 +116,21 @@ const PAGE_STYLE = `
   }
 `;
 
-function HomeInfoPageShell({ children }: { children: React.ReactNode }) {
+function HomeInfoPageShell({
+  bannerUrl,
+  children,
+}: {
+  bannerUrl?: string | null;
+  children: React.ReactNode;
+}) {
   return (
     <>
       <style>{PAGE_STYLE}</style>
+      {bannerUrl && (
+        <div className="home-info-banner">
+          <img src={bannerUrl} alt="Home banner" />
+        </div>
+      )}
       <div className="home-info-page">{children}</div>
     </>
   );
@@ -143,7 +165,7 @@ export default function HomeInfoPage({ homeId }: { homeId: string }) {
 
         const data = await res.json();
         const html = await marked.parse(data.markdown);
-        setState({ status: "ready", html });
+        setState({ status: "ready", html, bannerUrl: data.bannerUrl ?? null });
       })
       .catch((err) => {
         console.error(err);
@@ -187,7 +209,7 @@ export default function HomeInfoPage({ homeId }: { homeId: string }) {
   }
 
   return (
-    <HomeInfoPageShell>
+    <HomeInfoPageShell bannerUrl={state.bannerUrl}>
       <div dangerouslySetInnerHTML={{ __html: state.html }} />
     </HomeInfoPageShell>
   );

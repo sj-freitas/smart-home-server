@@ -13,6 +13,7 @@ const stubHomeState: HomeState = {
   pageTitle: "",
   logo: "",
   faviconUrl: "",
+  bannerUrl: "",
   subTitle: "",
   rooms: [],
 };
