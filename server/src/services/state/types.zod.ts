@@ -50,7 +50,7 @@ export const HomeStateZod = z.object({
   pageTitle: z.string(),
   logo: z.string(),
   faviconUrl: z.string(),
-  bannerUrl: z.string(),
+  bannerUrl: z.string().optional().default(""),
   subTitle: z.string(),
   rooms: z.array(RoomStateZod),
 });
