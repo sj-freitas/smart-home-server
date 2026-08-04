@@ -32,8 +32,27 @@ const PAGE_STYLE = `
   .home-info-page h5,
   .home-info-page h6 {
     line-height: 1.25;
+    font-weight: 600;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
+  }
+  .home-info-page h1 {
+    font-size: 2em;
+  }
+  .home-info-page h2 {
+    font-size: 1.5em;
+  }
+  .home-info-page h3 {
+    font-size: 1.25em;
+  }
+  .home-info-page h4 {
+    font-size: 1em;
+  }
+  .home-info-page h5 {
+    font-size: 0.875em;
+  }
+  .home-info-page h6 {
+    font-size: 0.85em;
   }
   .home-info-page p,
   .home-info-page ul,
