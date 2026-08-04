@@ -10,6 +10,91 @@ type LoadState =
   | { status: "error" }
   | { status: "ready"; html: string };
 
+const PAGE_STYLE = `
+  html, body {
+    background: #ffffff;
+    color: #1f2328;
+    margin: 0;
+    padding: 0;
+  }
+  .home-info-page {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+  }
+  .home-info-page h1,
+  .home-info-page h2,
+  .home-info-page h3,
+  .home-info-page h4,
+  .home-info-page h5,
+  .home-info-page h6 {
+    line-height: 1.25;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+  }
+  .home-info-page p,
+  .home-info-page ul,
+  .home-info-page ol,
+  .home-info-page blockquote,
+  .home-info-page table {
+    margin-top: 0;
+    margin-bottom: 1em;
+  }
+  .home-info-page img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .home-info-page code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: #f2f2f5;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  .home-info-page pre code {
+    display: block;
+    padding: 1em;
+    overflow-x: auto;
+  }
+  .home-info-page blockquote {
+    margin-left: 0;
+    padding-left: 1em;
+    border-left: 4px solid #d0d7de;
+    color: #57606a;
+  }
+  .home-info-page a {
+    color: #0969da;
+  }
+  @media (prefers-color-scheme: dark) {
+    html, body {
+      background: #0d1117;
+      color: #e6edf3;
+    }
+    .home-info-page code {
+      background: #21262d;
+    }
+    .home-info-page blockquote {
+      border-left-color: #30363d;
+      color: #8b949e;
+    }
+    .home-info-page a {
+      color: #4493f8;
+    }
+  }
+`;
+
+function HomeInfoPageShell({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <style>{PAGE_STYLE}</style>
+      <div className="home-info-page">{children}</div>
+    </>
+  );
+}
+
 export default function HomeInfoPage({ homeId }: { homeId: string }) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const { startLogin } = useAuthentication();
@@ -54,26 +139,37 @@ export default function HomeInfoPage({ homeId }: { homeId: string }) {
   }, [state.status, startLogin]);
 
   if (state.status === "loading" || state.status === "needs-login") {
-    return <div style={{ padding: 20 }}>Loading...</div>;
+    return (
+      <HomeInfoPageShell>
+        <p>Loading...</p>
+      </HomeInfoPageShell>
+    );
   }
   if (state.status === "forbidden") {
     return (
-      <div style={{ padding: 20 }}>
-        You don't have access to view this page.
-      </div>
+      <HomeInfoPageShell>
+        <p>You don't have access to view this page.</p>
+      </HomeInfoPageShell>
     );
   }
   if (state.status === "not-found") {
-    return <div style={{ padding: 20 }}>This page could not be found.</div>;
+    return (
+      <HomeInfoPageShell>
+        <p>This page could not be found.</p>
+      </HomeInfoPageShell>
+    );
   }
   if (state.status === "error") {
-    return <div style={{ padding: 20 }}>Failed to load this page.</div>;
+    return (
+      <HomeInfoPageShell>
+        <p>Failed to load this page.</p>
+      </HomeInfoPageShell>
+    );
   }
 
   return (
-    <div
-      className="app-shell markdown-content"
-      dangerouslySetInnerHTML={{ __html: state.html }}
-    />
+    <HomeInfoPageShell>
+      <div dangerouslySetInnerHTML={{ __html: state.html }} />
+    </HomeInfoPageShell>
   );
 }

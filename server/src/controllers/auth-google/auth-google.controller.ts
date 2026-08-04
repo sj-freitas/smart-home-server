@@ -20,6 +20,14 @@ import { OAuthPendingAuthorizationsPersistenceService } from "../../services/aut
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Only allow same-origin relative paths as a post-login redirect target,
+// to prevent the `state` param being abused as an open redirect.
+function isSafeReturnPath(path: string): boolean {
+  return (
+    path.startsWith("/") && !path.startsWith("//") && !path.includes("://")
+  );
+}
+
 @Controller("api/auth/google")
 export class AuthGoogleController {
   constructor(
@@ -97,6 +105,10 @@ export class AuthGoogleController {
         );
         return;
       }
+    }
+
+    if (state && isSafeReturnPath(state)) {
+      return response.redirect(`${this.authConfig.clientBaseUrl}${state}`);
     }
 
     return response.redirect(this.authConfig.clientBaseUrl);
