@@ -14,7 +14,7 @@ describe("HomeInfoImagesPersistenceService", () => {
       const svc = new HomeInfoImagesPersistenceService(pool);
 
       const result = await svc.getByHomeIdAndName(
-        "palais_freitas",
+        "palais-freitas",
         "cover.jpg",
       );
 
@@ -27,7 +27,7 @@ describe("HomeInfoImagesPersistenceService", () => {
         {
           id: "uuid-1",
           created_at: createdAt,
-          home_id: "palais_freitas",
+          home_id: "palais-freitas",
           name: "cover.jpg",
           image_base64: "ZmFrZS1pbWFnZS1kYXRh",
         },
@@ -35,14 +35,14 @@ describe("HomeInfoImagesPersistenceService", () => {
       const svc = new HomeInfoImagesPersistenceService(pool);
 
       const result = await svc.getByHomeIdAndName(
-        "palais_freitas",
+        "palais-freitas",
         "cover.jpg",
       );
 
       expect(result).toEqual({
         id: "uuid-1",
         createdAt,
-        homeId: "palais_freitas",
+        homeId: "palais-freitas",
         name: "cover.jpg",
         imageBase64: "ZmFrZS1pbWFnZS1kYXRh",
       });
@@ -52,11 +52,11 @@ describe("HomeInfoImagesPersistenceService", () => {
       const pool = makePool([]);
       const svc = new HomeInfoImagesPersistenceService(pool);
 
-      await svc.getByHomeIdAndName("palais_freitas", "cover.jpg");
+      await svc.getByHomeIdAndName("palais-freitas", "cover.jpg");
 
       expect(pool.query).toHaveBeenCalledWith(
         expect.stringContaining("WHERE home_id = $1 AND name = $2"),
-        ["palais_freitas", "cover.jpg"],
+        ["palais-freitas", "cover.jpg"],
       );
     });
   });

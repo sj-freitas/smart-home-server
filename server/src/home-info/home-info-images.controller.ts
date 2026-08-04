@@ -6,10 +6,12 @@ import {
   Param,
   Query,
   Res,
+  UseGuards,
 } from "@nestjs/common";
 import { Response } from "express";
 import { z } from "zod";
 import sharp = require("sharp");
+import { AuthGuard } from "../services/auth.guard";
 import { ConfigService } from "../config/config-service";
 import { HomeInfoImagesPersistenceService } from "./home-info-images.persistence.service";
 
@@ -21,6 +23,7 @@ const ImageQueryZod = z.object({
 });
 
 @Controller("static/images")
+@UseGuards(AuthGuard)
 export class HomeInfoImagesController {
   constructor(
     private readonly configService: ConfigService,

@@ -15,6 +15,13 @@ Vite uses a `.env` naming convention:
 - `.env.production`: Sets the production development env vars: `VITE_APP_ENV="production"`
 - `VITE_API_HOSTNAME:` The API hostname, locally should be `"http://localhost:3001/api"`
 - `VITE_GOOGLE_CLIENT_ID:` The Client Id for authentication. This flow can be bypassed if the API has AUTH_ALWAYS_DISALLOW_THE_IP set to "false".
+- `VITE_HOME_SLUG:` The home's `homeId` (must match `home.homeId` in the server's `config.json`). Used to build the link to the Home Info page and as the `:homeId` route param.
+
+## Home Info
+
+`/home-info/:homeId` ([home-info-page.tsx](./src/home-info-page.tsx)) fetches raw markdown from `GET <VITE_API_HOSTNAME>/home-info/:homeId` and renders it to HTML client-side via [marked](https://www.npmjs.com/package/marked). It's linked from the main app's "Home Info" link (built from `VITE_HOME_SLUG`).
+
+There's no router library in this app — `main.tsx` matches `window.location.pathname` against `/home-info/:homeId` directly and renders either `HomeInfoPage` or `Application`. The endpoint is gated by the same auth as the rest of the API: a 401 triggers the same Google login redirect used elsewhere (via `useAuthentication().startLogin()`), a 403 shows an access-denied message, a 404 shows a not-found message.
 
 ## Auth
 
