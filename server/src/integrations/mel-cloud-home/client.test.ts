@@ -250,6 +250,72 @@ describe("MelCloudHomeClient.getContext", () => {
     expect(result).toEqual([]);
   });
 
+  it("retries after forceRefresh when all devices report isConnected: false, even though buildings is non-empty", async () => {
+    const forceRefresh = jest.fn().mockResolvedValue(undefined);
+    const retrieveAuthCookies = jest
+      .fn()
+      .mockResolvedValueOnce(AUTH_COOKIE)
+      .mockResolvedValueOnce(FRESH_COOKIE);
+
+    const disconnectedUnit = { ...minimalUnit, isConnected: false };
+    fetchSpy
+      .mockResolvedValueOnce(
+        makeJsonResponse([{ airToAirUnits: [disconnectedUnit] }]),
+      )
+      .mockResolvedValueOnce(
+        makeJsonResponse([{ airToAirUnits: [minimalUnit] }]),
+      );
+
+    const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
+    const result = await client.getContext();
+
+    expect(forceRefresh).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(result).toHaveLength(1);
+    expect(result[0].isConnected).toBe(true);
+  });
+
+  it("does not trigger a refresh when only some devices are disconnected", async () => {
+    const forceRefresh = jest.fn().mockResolvedValue(undefined);
+    const disconnectedUnit = {
+      ...minimalUnit,
+      id: "device-2",
+      isConnected: false,
+    };
+
+    fetchSpy.mockResolvedValue(
+      makeJsonResponse([{ airToAirUnits: [minimalUnit, disconnectedUnit] }]),
+    );
+
+    const { client } = makeClient({}, forceRefresh);
+    const result = await client.getContext();
+
+    expect(forceRefresh).not.toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(result).toHaveLength(2);
+  });
+
+  it("exhausts all retries when devices are still all disconnected after forceRefresh", async () => {
+    const forceRefresh = jest.fn().mockResolvedValue(undefined);
+    const retrieveAuthCookies = jest
+      .fn()
+      .mockResolvedValueOnce(AUTH_COOKIE)
+      .mockResolvedValue(FRESH_COOKIE);
+    const disconnectedUnit = { ...minimalUnit, isConnected: false };
+
+    fetchSpy.mockResolvedValue(
+      makeJsonResponse([{ airToAirUnits: [disconnectedUnit] }]),
+    );
+
+    const { client } = makeClient({ retrieveAuthCookies }, forceRefresh);
+    const result = await client.getContext();
+
+    // withRetries(fn, 1) = 2 total attempts (1 initial + 1 retry)
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(result).toEqual([]);
+  });
+
   it("deduplicates concurrent forceRefresh calls - only one Puppeteer session runs at a time", async () => {
     let resolveRefresh!: () => void;
     const refreshPromise = new Promise<void>((res) => {

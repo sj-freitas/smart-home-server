@@ -19,10 +19,19 @@ export interface RoomDevice {
 }
 
 /**
- * MEL Cloud Home is noticeably buggy and sometimes all devices can show as OFFLINE and the API response
- * on the Context becomes an empty object. In these cases, there's not much we can do, but we should address
- * this state somehow.
+ * MEL Cloud Home is noticeably buggy and sometimes all devices can show as OFFLINE. This can manifest either
+ * as an empty `buildings` array, or (more insidiously) as a normal-looking response where every device is
+ * marked `isConnected: false`. Both are usually caused by the auth cookie having silently expired without
+ * MELCloud returning a 401 for it, so we treat either shape as a signal to force a token refresh and retry.
  */
+function isStaleTokenResponse(jsonResponse: {
+  buildings: { airToAirUnits: AirToAirUnit[] }[];
+}): boolean {
+  if (jsonResponse.buildings.length === 0) return true;
+  const units = jsonResponse.buildings[0]?.airToAirUnits ?? [];
+  return units.length > 0 && units.every((unit) => !unit.isConnected);
+}
+
 export class MelCloudHomeClient {
   // Deduplicates concurrent Puppeteer sessions: if a refresh is already in
   // flight, new callers await the same promise instead of launching their own.
@@ -109,8 +118,10 @@ export class MelCloudHomeClient {
     const jsonResponse = (await response.json()) as {
       buildings: { airToAirUnits: AirToAirUnit[] }[];
     };
-    if (jsonResponse.buildings.length === 0) {
-      throw new Error(`MelCloud returned empty buildings after token refresh`);
+    if (isStaleTokenResponse(jsonResponse)) {
+      throw new Error(
+        `MelCloud still reports devices as offline/disconnected after token refresh`,
+      );
     }
     return jsonResponse;
   }
@@ -136,16 +147,16 @@ export class MelCloudHomeClient {
       buildings: { airToAirUnits: AirToAirUnit[] }[];
     };
 
-    if (jsonResponse.buildings.length === 0) {
+    if (isStaleTokenResponse(jsonResponse)) {
       if (!this.forceRefresh) {
         this.logger.warn(
-          "MelCloud: empty buildings returned and no forceRefresh available, returning empty state",
+          "MelCloud: empty buildings or all devices disconnected, and no forceRefresh available, returning empty state",
         );
         return [];
       }
 
       this.logger.warn(
-        "MelCloud: empty buildings returned, triggering token refresh and retrying",
+        "MelCloud: empty buildings or all devices disconnected, triggering token refresh and retrying",
       );
 
       try {
