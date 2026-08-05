@@ -108,7 +108,7 @@ function buildDeviceStateFromAirToAirUnit(
     settingsRecord["RoomTemperature"] ?? "NaN",
   );
   return {
-    online: true,
+    online: unit.isConnected,
     state: action,
     temperature: isNaN(temperature) ? null : temperature,
     humidity: null,
@@ -204,7 +204,7 @@ export class MelCloudHomeIntegrationService implements IntegrationService<MelClo
         );
 
         return {
-          online: true,
+          online: matchingDevice.isConnected,
           state: action,
           temperature: matchingDevice.room.temperature,
           humidity: null,

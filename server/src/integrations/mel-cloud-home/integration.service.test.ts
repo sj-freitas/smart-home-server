@@ -197,6 +197,35 @@ describe("MelCloudHomeIntegrationService.consolidateDeviceStates", () => {
     ]);
   });
 
+  it("reports offline when the matched context device has isConnected: false", async () => {
+    const service = makeService({
+      getContext: jest
+        .fn()
+        .mockResolvedValue([{ ...mockRoomDevice, isConnected: false }]),
+    });
+    const result = await service.consolidateDeviceStates([mockDevice]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].online).toBe(false);
+    expect(result[0].state).toBe("cool");
+    expect(result[0].temperature).toBe(27);
+  });
+
+  it("reports offline when the getDevice() fallback returns isConnected: false", async () => {
+    const service = makeService({
+      getContext: jest.fn().mockResolvedValue([]),
+      getDevice: jest
+        .fn()
+        .mockResolvedValue({ ...mockAirToAirUnit, isConnected: false }),
+    });
+    const result = await service.consolidateDeviceStates([mockDevice]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].online).toBe(false);
+    expect(result[0].state).toBe("cool");
+    expect(result[0].temperature).toBe(27);
+  });
+
   it("calls getDevice() with the correct deviceId when falling back", async () => {
     const getDevice = jest.fn().mockResolvedValue(mockAirToAirUnit);
     const service = makeService({
