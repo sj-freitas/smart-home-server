@@ -1,8 +1,10 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, UseGuards } from "@nestjs/common";
 import { StatePersistenceService } from "../services/state/state.persistence.service";
 import { ConfigService } from "../config/config-service";
+import { RoleGuard } from "../services/role.guard";
 
 @Controller("api/home")
+@UseGuards(RoleGuard(["User", "Admin"]))
 export class HomeController {
   constructor(
     private readonly configService: ConfigService,

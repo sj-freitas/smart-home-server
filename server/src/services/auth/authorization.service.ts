@@ -2,7 +2,7 @@ import { hashApiKey } from "../../helpers/crypto.helper";
 import { IpValidationService } from "../ip-validation.service";
 import { ApiKeysPersistenceService } from "./api-keys.persistence.service";
 import { AuthorizationHeaderVerificationService } from "./authorization-header-verification.service";
-import { EmailsPersistenceService } from "./emails.persistence.service";
+import { EmailsPersistenceService, Role } from "./emails.persistence.service";
 import { GoogleSessionService } from "./google-session.service";
 import { RequestContext } from "../request-context";
 
@@ -55,6 +55,7 @@ export class AuthorizationService {
 
   private async validateSession(
     sessionId: string,
+    requiredRoles?: Role[],
   ): Promise<AuthorizationResult> {
     const session = await this.sessionService.validateSession(sessionId);
     if (session === null) {
@@ -63,13 +64,19 @@ export class AuthorizationService {
     }
 
     const { email } = session;
-    // Validate the email
-    const isEmailValid =
-      await this.emailsPersistenceService.validateEmail(email);
+    // Validate the email, scoped to a role if the caller requires one.
+    const isEmailValid = requiredRoles
+      ? await this.emailsPersistenceService.validateEmailForRoles(
+          email,
+          requiredRoles,
+        )
+      : await this.emailsPersistenceService.validateEmail(email);
     return isEmailValid ? "Authorized" : "Forbidden";
   }
 
-  public async isUserAuthorized(): Promise<AuthorizationResult> {
+  public async isUserAuthorized(
+    requiredRoles?: Role[],
+  ): Promise<AuthorizationResult> {
     const ipValidation = this.ipValidationService.isRequestAllowedBasedOnIP();
     if (ipValidation) {
       return "Authorized";
@@ -79,7 +86,10 @@ export class AuthorizationService {
     // We aren't doing JWT anymore.
     const sessionCookie = this.requestContext.sessionCookie;
     if (sessionCookie) {
-      return await this.validateSession(this.requestContext.sessionCookie);
+      return await this.validateSession(
+        this.requestContext.sessionCookie,
+        requiredRoles,
+      );
     }
 
     // No session token and no bearer -> login requested.

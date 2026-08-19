@@ -11,6 +11,7 @@ function makeService(opts: {
   sessionCookie?: string;
   sessionResult?: { email: string } | null;
   emailValid?: boolean;
+  emailValidForRoles?: boolean;
   bearerToken?: string | null;
   apiKeyResult?: { owner: string } | null;
 }): AuthorizationService {
@@ -19,6 +20,7 @@ function makeService(opts: {
     sessionCookie = undefined,
     sessionResult = null,
     emailValid = false,
+    emailValidForRoles = false,
     bearerToken = null,
     apiKeyResult = null,
   } = opts;
@@ -41,6 +43,7 @@ function makeService(opts: {
 
   const emailsPersistence = {
     validateEmail: jest.fn().mockResolvedValue(emailValid),
+    validateEmailForRoles: jest.fn().mockResolvedValue(emailValidForRoles),
   } as unknown as EmailsPersistenceService;
 
   const requestContext = { sessionCookie } as unknown as RequestContext;
@@ -96,6 +99,30 @@ describe("AuthorizationService.isUserAuthorized", () => {
     it("returns Forbidden when the API key is not found in the database", async () => {
       const svc = makeService({ bearerToken: "bad-key", apiKeyResult: null });
       await expect(svc.isUserAuthorized()).resolves.toBe("Forbidden");
+    });
+  });
+
+  describe("when required roles are given", () => {
+    it("returns Authorized when the session email holds one of the required roles", async () => {
+      const svc = makeService({
+        sessionCookie: "abc123",
+        sessionResult: { email: "user@example.com" },
+        emailValidForRoles: true,
+      });
+      await expect(svc.isUserAuthorized(["User", "Admin"])).resolves.toBe(
+        "Authorized",
+      );
+    });
+
+    it("returns Forbidden when the session email doesn't hold one of the required roles", async () => {
+      const svc = makeService({
+        sessionCookie: "abc123",
+        sessionResult: { email: "guest@example.com" },
+        emailValidForRoles: false,
+      });
+      await expect(svc.isUserAuthorized(["User", "Admin"])).resolves.toBe(
+        "Forbidden",
+      );
     });
   });
 });

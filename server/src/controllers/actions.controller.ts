@@ -1,12 +1,12 @@
 import { Controller, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "../services/auth.guard";
+import { RoleGuard } from "../services/role.guard";
 import { ActionRunnerService } from "../actions/action-runner.service";
 
 @Controller("api/actions")
 export class ActionsController {
   constructor(private readonly actionRunner: ActionRunnerService) {}
 
-  @UseGuards(AuthGuard)
+  @UseGuards(RoleGuard(["User", "Admin"]))
   @Post("/:roomId/:deviceId/:actionId")
   @HttpCode(200)
   public async performAction(

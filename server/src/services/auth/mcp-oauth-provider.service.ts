@@ -194,9 +194,11 @@ export class McpOAuthProviderService implements OAuthServerProvider {
       throw new InvalidTokenError("Access token has expired");
     }
 
-    const isEmailValid = await this.emailsPersistenceService.validateEmail(
-      existing.email,
-    );
+    const isEmailValid =
+      await this.emailsPersistenceService.validateEmailForRoles(
+        existing.email,
+        ["User", "Admin"],
+      );
     if (!isEmailValid) {
       throw new InvalidTokenError("User is no longer authorized");
     }
@@ -261,9 +263,11 @@ export class McpOAuthProviderService implements OAuthServerProvider {
       return null;
     }
 
-    const isEmailValid = await this.emailsPersistenceService.validateEmail(
-      session.email,
-    );
+    const isEmailValid =
+      await this.emailsPersistenceService.validateEmailForRoles(session.email, [
+        "User",
+        "Admin",
+      ]);
     return isEmailValid ? session.email : null;
   }
 
