@@ -2,7 +2,13 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { useClimateMetrics } from "./use-climate-metrics";
 import * as api from "../api/metrics-api";
 
-jest.mock("../api/metrics-api");
+// Keep the real ApiError class (not automocked) so `instanceof` checks in
+// the hook still work against instances constructed in these tests.
+jest.mock("../api/metrics-api", () => ({
+  ...jest.requireActual("../api/metrics-api"),
+  fetchClimateMetrics: jest.fn(),
+}));
+const { ApiError } = jest.requireActual("../api/metrics-api");
 const mockFetchClimate = api.fetchClimateMetrics as jest.MockedFunction<
   typeof api.fetchClimateMetrics
 >;
@@ -58,6 +64,18 @@ describe("useClimateMetrics", () => {
 
     expect(result.current.error).toBe("Network error");
     expect(result.current.series).toEqual([]);
+  });
+
+  it("sets status when an ApiError is thrown", async () => {
+    mockFetchClimate.mockRejectedValue(
+      new ApiError("Climate metrics fetch failed: 403", 403),
+    );
+
+    const { result } = renderHook(() => useClimateMetrics(defaultOpts));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.status).toBe(403);
   });
 
   it("refetch triggers a new fetch", async () => {

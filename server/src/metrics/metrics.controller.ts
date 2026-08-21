@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { z } from "zod";
-import { AuthGuard } from "../services/auth.guard";
+import { RoleGuard } from "../services/role.guard";
 import {
   MetricsPersistenceService,
   Granularity,
@@ -43,7 +43,7 @@ const ActionsQueryZod = z.object({
 });
 
 @Controller("/api/metrics")
-@UseGuards(AuthGuard)
+@UseGuards(RoleGuard(["Admin"]))
 export class MetricsController {
   constructor(
     private readonly metricsPersistenceService: MetricsPersistenceService,

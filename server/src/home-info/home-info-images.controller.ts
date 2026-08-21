@@ -11,7 +11,7 @@ import {
 import { Response } from "express";
 import { z } from "zod";
 import sharp = require("sharp");
-import { AuthGuard } from "../services/auth.guard";
+import { RoleGuard } from "../services/role.guard";
 import { ConfigService } from "../config/config-service";
 import { HomeInfoImagesPersistenceService } from "./home-info-images.persistence.service";
 
@@ -23,7 +23,7 @@ const ImageQueryZod = z.object({
 });
 
 @Controller("static/images")
-@UseGuards(AuthGuard)
+@UseGuards(RoleGuard(["Guest", "Admin"]))
 export class HomeInfoImagesController {
   constructor(
     private readonly configService: ConfigService,

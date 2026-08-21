@@ -2,7 +2,13 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useDeviceActions } from "./use-device-actions";
 import * as api from "../api/metrics-api";
 
-jest.mock("../api/metrics-api");
+// Keep the real ApiError class (not automocked) so `instanceof` checks in
+// the hook still work against instances constructed in these tests.
+jest.mock("../api/metrics-api", () => ({
+  ...jest.requireActual("../api/metrics-api"),
+  fetchDeviceActions: jest.fn(),
+}));
+const { ApiError } = jest.requireActual("../api/metrics-api");
 const mockFetchActions = api.fetchDeviceActions as jest.MockedFunction<
   typeof api.fetchDeviceActions
 >;
@@ -56,5 +62,17 @@ describe("useDeviceActions", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.error).toBe("Server error");
+  });
+
+  it("sets status when an ApiError is thrown", async () => {
+    mockFetchActions.mockRejectedValue(
+      new ApiError("Device actions fetch failed: 403", 403),
+    );
+
+    const { result } = renderHook(() => useDeviceActions(defaultOpts));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.status).toBe(403);
   });
 });

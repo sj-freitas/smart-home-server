@@ -25,9 +25,16 @@ function setTitle(title: string | null) {
   document.title = title;
 }
 
+type HomeLoadState =
+  | "loading"
+  | "needs-login"
+  | "forbidden"
+  | "error"
+  | "ready";
+
 export default function Application() {
   const [home, setHome] = useState<Home | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [homeLoadState, setHomeLoadState] = useState<HomeLoadState>("loading");
   const { state, setStateSuppressSocket } = useHomeState();
   const API_BASE = import.meta.env.VITE_API_HOSTNAME;
   const HOME_SLUG = import.meta.env.VITE_HOME_SLUG;
@@ -63,13 +70,28 @@ export default function Application() {
     fetch(`${API_BASE}/home`, {
       credentials: "include",
     })
-      .then((r) => r.json())
-      .then((data) => setHome(data))
+      .then((res) => {
+        if (res.status === 401) {
+          setHomeLoadState("needs-login");
+          return;
+        }
+        if (res.status === 403) {
+          setHomeLoadState("forbidden");
+          return;
+        }
+        if (!res.ok) {
+          setHomeLoadState("error");
+          return;
+        }
+        return res.json().then((data) => {
+          setHome(data);
+          setHomeLoadState("ready");
+        });
+      })
       .catch((err) => {
         console.error(err);
-        alert("Failed to load home state");
-      })
-      .finally(() => setLoading(false));
+        setHomeLoadState("error");
+      });
   }, []);
 
   // Update a single device state locally (after successful action)
@@ -95,11 +117,16 @@ export default function Application() {
     });
   }
 
-  if (loading) {
+  if (homeLoadState === "loading" || homeLoadState === "needs-login") {
     return <div style={{ padding: 20 }}>Loading...</div>;
   }
-  if (!home) {
-    return <div style={{ padding: 20 }}>No state</div>;
+  if (homeLoadState === "forbidden") {
+    return (
+      <div style={{ padding: 20 }}>You don't have access to view devices.</div>
+    );
+  }
+  if (homeLoadState === "error" || !home) {
+    return <div style={{ padding: 20 }}>Failed to load home state.</div>;
   }
 
   return (
@@ -131,6 +158,10 @@ export default function Application() {
                 credentials: "include",
               },
             );
+            if (res.status === 403) {
+              alert("You don't have permission to control devices.");
+              return;
+            }
             const data = await res.json();
             if (res.ok && data.runStatus === "success") {
               applyDeviceState(roomId, deviceId, actionId);

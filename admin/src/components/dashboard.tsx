@@ -30,10 +30,11 @@ function toDatetimeLocal(d: Date): string {
 
 interface DashboardProps {
   onLogout: () => void;
+  onForbidden: () => void;
 }
 
-export function Dashboard({ onLogout }: DashboardProps) {
-  const { rooms, loading: roomsLoading } = useRooms();
+export function Dashboard({ onLogout, onForbidden }: DashboardProps) {
+  const { rooms, loading: roomsLoading, status: roomsStatus } = useRooms();
 
   // Initialise from cookie (lazy initialisers run once on mount)
   const [activePreset, setActivePreset] = useState<TimePreset>(() => {
@@ -123,6 +124,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     series,
     loading: climateLoading,
     error: climateError,
+    status: climateStatus,
     refetch,
   } = useClimateMetrics({
     roomIds: selectedRoomIds,
@@ -145,6 +147,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
   const {
     events: deviceActions,
     loading: actionsLoading,
+    status: actionsStatus,
     refetch: refetchActions,
   } = useDeviceActions({
     roomIds: selectedRoomIds,
@@ -152,6 +155,12 @@ export function Dashboard({ onLogout }: DashboardProps) {
     from: timeRange.from,
     to: timeRange.to,
   });
+
+  useEffect(() => {
+    if (roomsStatus === 403 || climateStatus === 403 || actionsStatus === 403) {
+      onForbidden();
+    }
+  }, [roomsStatus, climateStatus, actionsStatus, onForbidden]);
 
   // Polling every 2 minutes - use refs so the interval closure never goes stale
   const refetchRef = useRef(refetch);

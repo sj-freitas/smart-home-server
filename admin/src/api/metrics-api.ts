@@ -5,6 +5,16 @@ import {
   Granularity,
 } from "../types";
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 function buildQuery(
   params: Record<string, string | string[] | undefined>,
 ): string {
@@ -40,7 +50,10 @@ export async function fetchClimateMetrics(opts: {
   });
 
   if (!res.ok) {
-    throw new Error(`Climate metrics fetch failed: ${res.status}`);
+    throw new ApiError(
+      `Climate metrics fetch failed: ${res.status}`,
+      res.status,
+    );
   }
 
   return res.json() as Promise<ClimateResponse>;
@@ -64,7 +77,10 @@ export async function fetchDeviceActions(opts: {
   });
 
   if (!res.ok) {
-    throw new Error(`Device actions fetch failed: ${res.status}`);
+    throw new ApiError(
+      `Device actions fetch failed: ${res.status}`,
+      res.status,
+    );
   }
 
   return res.json() as Promise<DeviceActionsResponse>;
@@ -74,7 +90,7 @@ export async function fetchHomeState(): Promise<HomeState | null> {
   const res = await fetch("/api/home", { credentials: "include" });
 
   if (!res.ok) {
-    throw new Error(`Home state fetch failed: ${res.status}`);
+    throw new ApiError(`Home state fetch failed: ${res.status}`, res.status);
   }
 
   return res.json() as Promise<HomeState | null>;

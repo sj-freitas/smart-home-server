@@ -8,24 +8,29 @@ import {
 import { Request } from "express";
 import { ApiKeyGuard } from "../services/api-key.guard";
 import { z } from "zod";
-import { EmailsPersistenceService } from "../services/auth/emails.persistence.service";
+import {
+  EmailsPersistenceService,
+  RoleZod,
+} from "../services/auth/emails.persistence.service";
 
 const AddAccessToEmailBodyRequestZod = z
   .object({
     emailAddress: z.string(),
+    role: RoleZod,
     startDate: z.iso.datetime(),
     endDate: z.iso.datetime(),
   })
   .transform((t) => ({
     emailAddress: t.emailAddress,
+    role: t.role,
     startDate: new Date(t.startDate),
     endDate: new Date(t.endDate),
   }));
 
 /**
- * Current authentication via API Key only. But ideally should use a role validation instead.
- * We don't support roles yet. The API key flow is incredibly limited only for special use
- * cases.
+ * Current authentication via API Key only. The API key flow is incredibly
+ * limited, only for special use cases - the roles it grants are unrelated
+ * to the API key itself.
  */
 @Controller("api/admin")
 @UseGuards(ApiKeyGuard)
@@ -42,7 +47,7 @@ export class AdminController {
       throw new BadRequestException();
     }
 
-    const { emailAddress, startDate, endDate } = parsedBody.data;
+    const { emailAddress, role, startDate, endDate } = parsedBody.data;
 
     if (endDate.getTime() < startDate.getTime()) {
       throw new BadRequestException(`endDate cannot be prior to startDate.`);
@@ -50,6 +55,7 @@ export class AdminController {
 
     return await this.emailsPersistenceService.addEmail(
       emailAddress,
+      role,
       startDate,
       endDate,
     );

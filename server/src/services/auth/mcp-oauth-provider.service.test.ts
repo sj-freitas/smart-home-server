@@ -48,6 +48,7 @@ function makeService(
 
   const emailsPersistenceService = {
     validateEmail: jest.fn().mockResolvedValue(emailValid),
+    validateEmailForRoles: jest.fn().mockResolvedValue(emailValid),
   } as unknown as EmailsPersistenceService;
 
   const clientsPersistenceService = {

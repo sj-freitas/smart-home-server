@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { ClimateSeries, Granularity } from "../types";
-import { fetchClimateMetrics } from "../api/metrics-api";
+import { ApiError, fetchClimateMetrics } from "../api/metrics-api";
 
 export interface UseClimateMetricsResult {
   series: ClimateSeries[];
   loading: boolean;
   error: string | null;
+  status: number | null;
   refetch: () => void;
 }
 
@@ -23,6 +24,7 @@ export function useClimateMetrics(
   const [series, setSeries] = useState<ClimateSeries[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
 
   const { roomIds, from, to, granularity } = opts;
@@ -30,17 +32,21 @@ export function useClimateMetrics(
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setStatus(null);
 
     // Empty roomIds = no filter (fetch all rooms).
     const activeRoomIds = roomIds.length > 0 ? roomIds : undefined;
 
     fetchClimateMetrics({ roomIds: activeRoomIds, from, to, granularity })
       .then((res) => setSeries(res.series))
-      .catch((err: Error) => setError(err.message))
+      .catch((err: Error) => {
+        setError(err.message);
+        setStatus(err instanceof ApiError ? err.status : null);
+      })
       .finally(() => setLoading(false));
   }, [roomIds.join(","), from.getTime(), to.getTime(), granularity, tick]);
 
   const refetch = useCallback(() => setTick((t) => t + 1), []);
 
-  return { series, loading, error, refetch };
+  return { series, loading, error, status, refetch };
 }

@@ -5,12 +5,12 @@ import {
   Param,
   UseGuards,
 } from "@nestjs/common";
-import { AuthGuard } from "../services/auth.guard";
+import { RoleGuard } from "../services/role.guard";
 import { ConfigService } from "../config/config-service";
 import { HomeInfoPersistenceService } from "./home-info.persistence.service";
 
 @Controller("api/home-info")
-@UseGuards(AuthGuard)
+@UseGuards(RoleGuard(["Guest", "Admin"]))
 export class HomeInfoController {
   constructor(
     private readonly configService: ConfigService,
