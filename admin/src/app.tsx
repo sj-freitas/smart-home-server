@@ -1,15 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "./auth/use-auth";
 import { Dashboard } from "./components/dashboard";
 
 export default function App() {
   const { authState, logout } = useAuth();
+  const [dataForbidden, setDataForbidden] = useState(false);
 
   if (authState === "Checking") {
     return <FullPageMessage>Loading…</FullPageMessage>;
   }
 
-  if (authState === "Forbidden") {
+  if (authState === "Forbidden" || dataForbidden) {
     return (
       <FullPageMessage>
         Access denied. Your account does not have permission to view this page.
@@ -17,7 +18,9 @@ export default function App() {
     );
   }
 
-  return <Dashboard onLogout={logout} />;
+  return (
+    <Dashboard onLogout={logout} onForbidden={() => setDataForbidden(true)} />
+  );
 }
 
 function FullPageMessage({ children }: { children: React.ReactNode }) {

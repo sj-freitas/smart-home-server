@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { DeviceActionEvent } from "../types";
-import { fetchDeviceActions } from "../api/metrics-api";
+import { ApiError, fetchDeviceActions } from "../api/metrics-api";
 
 export interface UseDeviceActionsResult {
   events: DeviceActionEvent[];
   loading: boolean;
   error: string | null;
+  status: number | null;
   refetch: () => void;
 }
 
@@ -18,6 +19,7 @@ export function useDeviceActions(opts: {
   const [events, setEvents] = useState<DeviceActionEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
 
   const { roomIds, deviceIds, from, to } = opts;
@@ -25,6 +27,7 @@ export function useDeviceActions(opts: {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setStatus(null);
 
     // Empty roomIds = no filter (fetch all rooms).
     const activeRoomIds = roomIds.length > 0 ? roomIds : undefined;
@@ -35,6 +38,7 @@ export function useDeviceActions(opts: {
       })
       .catch((err: Error) => {
         setError(err.message);
+        setStatus(err instanceof ApiError ? err.status : null);
       })
       .finally(() => setLoading(false));
   }, [
@@ -47,5 +51,5 @@ export function useDeviceActions(opts: {
 
   const refetch = useCallback(() => setTick((t) => t + 1), []);
 
-  return { events, loading, error, refetch };
+  return { events, loading, error, status, refetch };
 }
