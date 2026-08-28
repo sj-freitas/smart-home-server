@@ -42,6 +42,11 @@ export const PgPoolProvider = {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
     });
+
+    pool.on("error", (err) => {
+      console.error("Unexpected error on idle pg client", err);
+    });
+
     return pool;
   },
 };
