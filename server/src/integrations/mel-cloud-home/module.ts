@@ -1,13 +1,12 @@
 import { Module, Scope } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
+import { Pool } from "pg";
 import { MelCloudHomeIntegrationService } from "./integration.service";
 import { ConfigModule } from "../../config/module";
 import { ConfigService } from "../../config/config-service";
 import { MelCloudHomeClient } from "./client";
-import {
-  InMemoryMelCloudAuthCookiesPersistenceService,
-  MelCloudAuthCookiesPersistenceService,
-} from "./auth-cookies.persistence.service";
+import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistence.service";
+import { DbMelCloudAuthCookiesPersistenceService } from "./db-auth-cookies.persistence.service";
 import { spinCookieRefresher } from "./cookie-refresher";
 import { MelCLoudHomeController } from "./controllers/mel-cloud-home.controller";
 import { updateStateForDevicesOfIntegration } from "../../helpers/state-updater.helper";
@@ -22,7 +21,8 @@ export const MEL_CLOUD_AUTHENTICATION_COOKIES =
 const MelCloudAuthCookiesPersistenceServiceProvider = {
   provide: MEL_CLOUD_AUTHENTICATION_COOKIES,
   scope: Scope.DEFAULT,
-  useFactory: () => new InMemoryMelCloudAuthCookiesPersistenceService(),
+  inject: [Pool],
+  useFactory: (pool: Pool) => new DbMelCloudAuthCookiesPersistenceService(pool),
 };
 
 export const MEL_CLOUD_HOME_STATE_POLLING = "MelCloudHomeStatePolling";

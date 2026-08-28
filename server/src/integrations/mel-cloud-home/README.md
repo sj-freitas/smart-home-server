@@ -2,7 +2,7 @@
 
 This integration **is not officially supported in any form by MEL Cloud Home, use at own risk!**.
 
-There is a [decent API](https://melcloudhome.com/api) developed by Mitsubishi Electric but it doesn't include a server-to-server login flow. The current way that the server authenticates is by using a [puppeteer bot](./authorization-cookies.ts). The Auth cookies are then stored in memory in the API.
+There is a [decent API](https://melcloudhome.com/api) developed by Mitsubishi Electric but it doesn't include a server-to-server login flow. The current way that the server authenticates is by using a [puppeteer bot](./authorization-cookies.ts). The Auth cookies are then persisted in the `mel_cloud_home_auth_cookies` table (see [auth-cookies.persistence.service.ts](./auth-cookies.persistence.service.ts)).
 
 ## Integration config
 
