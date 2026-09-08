@@ -76,7 +76,6 @@ export async function getAuthorizationCookies(
     await page.setUserAgent({ userAgent: DEFAULT_USER_AGENT });
     page.setDefaultTimeout(30_000);
     page.setDefaultNavigationTimeout(60_000);
-
     logger.debug(
       { url: melCloudHomeConfig.siteUrl },
       "MelCloud: navigating to login page",
@@ -88,7 +87,7 @@ export async function getAuthorizationCookies(
 
     logger.debug("MelCloud: clicking Sign In and entering credentials");
     const signInButton = await page.waitForSelector(
-      "xpath=//button[normalize-space() = 'Sign In']",
+      "xpath=//mel-button[normalize-space() = 'Sign In']",
     );
     if (!signInButton) {
       throw new Error("Sign in button not found");
