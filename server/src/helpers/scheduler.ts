@@ -6,7 +6,10 @@ export async function startScheduler<T>(
   const firstRun = await fn();
   // Schedule future runs
   setInterval(() => {
-    void fn();
+    // An unhandled rejection here would take the whole process down.
+    fn().catch((err) => {
+      console.error("Scheduled task failed, will retry on next run:", err);
+    });
   }, intervalInMilliseconds);
 
   return firstRun;

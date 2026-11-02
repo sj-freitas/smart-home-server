@@ -70,7 +70,20 @@ const minimalUnit = {
 };
 
 function makeJsonResponse(buildings: object[]) {
-  return { status: 200, json: jest.fn().mockResolvedValue({ buildings }) };
+  return {
+    status: 200,
+    headers: new Headers({ "content-type": "application/json" }),
+    json: jest.fn().mockResolvedValue({ buildings }),
+  };
+}
+
+function makeHtmlResponse() {
+  return {
+    status: 200,
+    headers: new Headers({ "content-type": "text/html; charset=utf-8" }),
+    text: jest.fn().mockResolvedValue("<!DOCTYPE html>"),
+    json: jest.fn().mockRejectedValue(new SyntaxError("Unexpected token '<'")),
+  };
 }
 
 function makeClient(
@@ -316,6 +329,50 @@ describe("MelCloudHomeClient.getContext", () => {
     expect(result).toEqual([]);
   });
 
+  it("refreshes and retries when the API responds with a 200 HTML page", async () => {
+    const forceRefresh = jest.fn().mockResolvedValue(undefined);
+
+    fetchSpy
+      .mockResolvedValueOnce(makeHtmlResponse())
+      .mockResolvedValueOnce(
+        makeJsonResponse([{ airToAirUnits: [minimalUnit] }]),
+      );
+
+    const { client } = makeClient({}, forceRefresh);
+    const result = await client.getContext();
+
+    expect(forceRefresh).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(result).toHaveLength(1);
+  });
+
+  it("returns empty array instead of throwing when the API keeps responding with HTML", async () => {
+    const forceRefresh = jest.fn().mockResolvedValue(undefined);
+
+    fetchSpy.mockImplementation(async () => makeHtmlResponse());
+
+    const { client } = makeClient({}, forceRefresh);
+    const result = await client.getContext();
+
+    expect(forceRefresh).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array when the post-refresh retries respond with HTML", async () => {
+    const forceRefresh = jest.fn().mockResolvedValue(undefined);
+
+    fetchSpy
+      .mockResolvedValueOnce(makeJsonResponse([]))
+      .mockImplementation(async () => makeHtmlResponse());
+
+    const { client } = makeClient({}, forceRefresh);
+    const result = await client.getContext();
+
+    expect(forceRefresh).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([]);
+  });
+
   it("deduplicates concurrent forceRefresh calls - only one Puppeteer session runs at a time", async () => {
     let resolveRefresh!: () => void;
     const refreshPromise = new Promise<void>((res) => {
@@ -347,5 +404,29 @@ describe("MelCloudHomeClient.getContext", () => {
     expect(forceRefresh).toHaveBeenCalledTimes(1);
     expect(r1).toHaveLength(1);
     expect(r2).toHaveLength(1);
+  });
+});
+
+describe("MelCloudHomeClient.getDevice", () => {
+  let fetchSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    fetchSpy = jest.spyOn(global, "fetch" as never);
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  it("returns null instead of throwing when the API keeps responding with HTML", async () => {
+    const forceRefresh = jest.fn().mockResolvedValue(undefined);
+
+    fetchSpy.mockImplementation(async () => makeHtmlResponse());
+
+    const { client } = makeClient({}, forceRefresh);
+    const result = await client.getDevice("device-1");
+
+    expect(forceRefresh).toHaveBeenCalledTimes(1);
+    expect(result).toBeNull();
   });
 });

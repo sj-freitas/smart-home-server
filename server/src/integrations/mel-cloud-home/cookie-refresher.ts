@@ -2,7 +2,6 @@ import { MelCloudAuthCookiesPersistenceService } from "./auth-cookies.persistenc
 import { getAuthorizationCookies } from "./authorization-cookies";
 import { MelCloudHomeIntegration } from "../../config/integration.zod";
 import { ConfigService } from "../../config/config-service";
-import { startScheduler } from "../../helpers/scheduler";
 import { withRetries } from "../../helpers/retry";
 import { PinoLogger } from "nestjs-pino";
 
@@ -72,10 +71,15 @@ export async function spinCookieRefresher(
   if (!authCookies) {
     logger.info(
       { source: "background", task: "cookie-refresh" },
-      "MelCloud: no existing cookies found, performing initial refresh and scheduling periodic runs",
+      "MelCloud: no existing cookies found, performing initial refresh",
     );
-    await startScheduler(refreshAuthCookiesTask, FIFTEEN_MINUTES_MS);
+    await refreshAuthCookiesTask();
   }
+
+  // Persisted cookies survive restarts, so the periodic refresh has to run regardless of what was stored.
+  setInterval(() => {
+    void refreshAuthCookiesTask();
+  }, FIFTEEN_MINUTES_MS);
 
   return refreshAuthCookiesTask;
 }

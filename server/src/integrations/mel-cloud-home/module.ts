@@ -35,7 +35,7 @@ const MelCloudHomePollingProvider = {
     HomeStateGateway,
     PinoLogger,
   ],
-  useFactory: async (
+  useFactory: (
     config: ConfigService,
     melCLoudHomeIntegration: MelCloudHomeIntegrationService,
     stateService: StateService,
@@ -44,17 +44,25 @@ const MelCloudHomePollingProvider = {
   ) => {
     const homeConfig = config.getConfig().home;
 
-    await startScheduler(async () => {
+    // Not awaited and never rejects: MEL Cloud being down must not stop the application from booting.
+    void startScheduler(async () => {
       logger.debug(
         { source: "background", task: "state-poll" },
         "MelCloud: polling device state",
       );
-      await updateStateForDevicesOfIntegration(
-        homeConfig,
-        melCLoudHomeIntegration,
-        stateService,
-        homeStateGateway,
-      );
+      try {
+        await updateStateForDevicesOfIntegration(
+          homeConfig,
+          melCLoudHomeIntegration,
+          stateService,
+          homeStateGateway,
+        );
+      } catch (err) {
+        logger.error(
+          { source: "background", task: "state-poll", err },
+          "MelCloud: device state poll failed, will retry on next scheduled run",
+        );
+      }
     }, 120_000);
   },
 };

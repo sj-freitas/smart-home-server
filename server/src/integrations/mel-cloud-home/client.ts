@@ -32,6 +32,18 @@ function isStaleTokenResponse(jsonResponse: {
   return units.length > 0 && units.every((unit) => !unit.isConnected);
 }
 
+/**
+ * MEL Cloud Home can answer API requests with a 200 HTML page instead of JSON, usually when the session is
+ * no longer valid and the request gets redirected to a web page. `fetch` follows the redirect, so the only
+ * way to tell it apart from a successful response is the content type.
+ */
+function isHtmlResponse(response: Response): boolean {
+  return (
+    response.status === 200 &&
+    (response.headers.get("content-type") ?? "").includes("text/html")
+  );
+}
+
 export class MelCloudHomeClient {
   // Deduplicates concurrent Puppeteer sessions: if a refresh is already in
   // flight, new callers await the same promise instead of launching their own.
@@ -65,13 +77,13 @@ export class MelCloudHomeClient {
     };
 
     const response = await makeRequest();
-    if (response.status !== 401) {
+    if (response.status !== 401 && !isHtmlResponse(response)) {
       return response;
     }
 
     this.logger.warn(
-      { url },
-      "MelCloud: received 401, refreshing token and retrying",
+      { url, status: response.status },
+      "MelCloud: session looks invalid, refreshing token and retrying",
     );
     await this.callForceRefresh();
     return makeRequest();
@@ -111,7 +123,7 @@ export class MelCloudHomeClient {
         Cookie: authCookie,
       },
     });
-    if (response.status !== 200) {
+    if (response.status !== 200 || isHtmlResponse(response)) {
       throw new Error(
         `MelCloud context request failed with status ${response.status}`,
       );
@@ -135,7 +147,7 @@ export class MelCloudHomeClient {
       },
     );
 
-    if (response.status !== 200) {
+    if (response.status !== 200 || isHtmlResponse(response)) {
       const body = await response.text();
       this.logger.warn(
         { status: response.status, body },
@@ -231,7 +243,7 @@ export class MelCloudHomeClient {
       },
     );
 
-    if (response.status !== 200) {
+    if (response.status !== 200 || isHtmlResponse(response)) {
       const body = await response.text();
       this.logger.warn(
         { deviceId, status: response.status, body },
@@ -257,7 +269,7 @@ export class MelCloudHomeClient {
       },
     );
 
-    if (response.status !== 200) {
+    if (response.status !== 200 || isHtmlResponse(response)) {
       const body = await response.text();
       this.logger.warn(
         { deviceId, status: response.status, body },
